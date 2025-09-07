@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { 
-  Package, 
-  ShoppingCart, 
-  DollarSign, 
+import {
+  Package,
+  ShoppingCart,
+  DollarSign,
   AlertTriangle,
   TrendingUp,
   Tag
@@ -31,14 +31,14 @@ export default function Dashboard() {
     const loadStats = async () => {
       try {
         setLoading(true)
-        
+
         // Calcular estadísticas de productos
         // Por ahora, asumimos que todos los productos tienen stock
         const lowStockProducts = 0 // TODO: Implementar cuando tengamos acceso a variantes
 
         // Obtener estadísticas de órdenes
         const orderStats = await getOrdersStats()
-        
+
         // Calcular cupones activos
         const activeDiscounts = discounts.filter(d => d.is_active).length
 
@@ -174,36 +174,42 @@ export default function Dashboard() {
               Productos Recientes
             </h3>
             <div className="space-y-3">
-              {products.slice(0, 5).map((product) => (
-                <div key={product.id} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      {product.images && product.images[0] ? (
-                        <img
-                          className="h-10 w-10 rounded-lg object-cover"
-                          src={product.images[0]}
-                          alt={product.name}
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                          <Package className="h-5 w-5 text-gray-400" />
+              {products.slice(0, 5).map((product) => {
+                const imageUrl = typeof product.images?.[0] === 'string'
+                  ? product.images[0]
+                  : product.images?.[0]?.url;
+
+                return (
+                  <div key={product.id} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        {imageUrl ? (
+                          <img
+                            className="h-10 w-10 rounded-lg object-cover"
+                            src={imageUrl}
+                            alt={product.name}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {product.name}
                         </div>
-                      )}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {product.name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {product.type}
+                        <div className="text-sm text-gray-500">
+                          {product.category_name || 'Sin categoría'}
+                        </div>
                       </div>
                     </div>
+                    <div className="text-sm text-gray-500">
+                      {product.default_price_cents ? formatCurrency(product.default_price_cents) : 'N/A'}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {formatCurrency(product.price_cents)}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
@@ -244,3 +250,4 @@ export default function Dashboard() {
     </div>
   )
 }
+
