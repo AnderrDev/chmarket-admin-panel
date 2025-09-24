@@ -69,24 +69,40 @@ export interface ProductVariant {
   deleted_at?: string | null
 }
 
+export interface Address {
+  city?: string
+  name?: string
+  email?: string
+  phone?: string
+  address?: string
+  country?: string
+  zipCode?: string
+  documentType?: string
+  documentNumber?: string
+}
+
 export interface Order {
   id: string
   order_number: string
   email: string
   status: OrderStatus
+
   subtotal_cents: number
   shipping_cents: number
   discount_cents: number
   total_cents: number
   currency: Currency
-  shipping_address?: Json
-  billing_address?: Json
+
+  shipping_address?: Address
+  billing_address?: Address
+
   payment_provider?: string
   payment_status?: PaymentStatus
-  payment_preference_id?: string
-  payment_id?: string
-  payment_external_reference?: string
-  payment_raw?: Json
+  payment_preference_id?: string | null
+  payment_id?: string | null
+  payment_external_reference?: string | null
+  payment_raw?: Json | null
+
   created_at: string
   updated_at: string
 }

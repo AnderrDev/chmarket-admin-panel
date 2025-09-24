@@ -16,14 +16,14 @@ export default function OrderDetail() {
   useEffect(() => {
     const loadOrderData = async () => {
       if (!id) return
-      
+
       try {
         setLoading(true)
         const [orderData, itemsData] = await Promise.all([
           getOrder(id),
           getOrderItems(id)
         ])
-        
+
         setOrder(orderData)
         setOrderItems(itemsData)
       } catch (error) {
@@ -38,7 +38,7 @@ export default function OrderDetail() {
 
   const handleStatusUpdate = async (newStatus: Order['status']) => {
     if (!order) return
-    
+
     try {
       const updatedOrder = await updateOrderStatus(order.id, newStatus)
       setOrder(updatedOrder)
@@ -116,7 +116,7 @@ export default function OrderDetail() {
                 {formatStatus(order.status)}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">Subtotal:</span>
@@ -208,27 +208,23 @@ export default function OrderDetail() {
           </div>
 
           {/* Dirección de envío */}
+          {/* Dirección de envío */}
           {order.shipping_address && (
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex items-center mb-4">
                 <MapPin className="h-5 w-5 text-gray-400 mr-2" />
                 <h3 className="text-lg font-medium text-gray-900">Dirección de Envío</h3>
               </div>
-              <div className="text-sm text-gray-900">
-                {order.shipping_address.street && (
-                  <div>{order.shipping_address.street}</div>
-                )}
-                {order.shipping_address.city && (
-                  <div>{order.shipping_address.city}</div>
-                )}
-                {order.shipping_address.state && (
-                  <div>{order.shipping_address.state}</div>
-                )}
-                {order.shipping_address.postal_code && (
-                  <div>{order.shipping_address.postal_code}</div>
-                )}
-                {order.shipping_address.country && (
-                  <div>{order.shipping_address.country}</div>
+              <div className="text-sm text-gray-900 space-y-1">
+                {order.shipping_address.name && <div><strong>Nombre:</strong> {order.shipping_address.name}</div>}
+                {order.shipping_address.phone && <div><strong>Teléfono:</strong> {order.shipping_address.phone}</div>}
+                {order.shipping_address.email && <div><strong>Email:</strong> {order.shipping_address.email}</div>}
+                {order.shipping_address.address && <div><strong>Dirección:</strong> {order.shipping_address.address}</div>}
+                {order.shipping_address.city && <div><strong>Ciudad:</strong> {order.shipping_address.city}</div>}
+                {order.shipping_address.country && <div><strong>País:</strong> {order.shipping_address.country}</div>}
+                {order.shipping_address.zipCode && <div><strong>Código Postal:</strong> {order.shipping_address.zipCode}</div>}
+                {order.shipping_address.documentType && order.shipping_address.documentNumber && (
+                  <div><strong>{order.shipping_address.documentType}:</strong> {order.shipping_address.documentNumber}</div>
                 )}
               </div>
             </div>
