@@ -25,12 +25,8 @@ export interface Product {
   long_description?: string
   features?: string[]
   ingredients?: string[]
-  nutrition_facts?: Json
 
   images?: ImageRef[]
-  tags?: string[]
-  seo_title?: string
-  seo_description?: string
 
   is_featured: boolean
   is_active: boolean

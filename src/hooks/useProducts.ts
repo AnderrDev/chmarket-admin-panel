@@ -19,7 +19,15 @@ export function useProducts() {
       const res = await fetch(`${BASE}/products/list`, { headers: { ...AUTH } })
       const json = await res.json()
       if (!res.ok) throw new Error(json?.error || 'Error al cargar productos')
-      setProducts(json.data || [])
+      // 👇 mapeamos la categoría anidada
+      const mapped = (json.data || []).map((p: any) => ({
+        ...p,
+        category_id: p.category?.id || p.category_id || null,
+        category_name: p.category?.name || p.category_name || null,
+        category: undefined // evitamos duplicados en el objeto
+      }))
+
+      setProducts(mapped)
       setError(null)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error al cargar productos'

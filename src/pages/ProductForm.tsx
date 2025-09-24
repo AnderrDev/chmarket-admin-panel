@@ -1,7 +1,7 @@
 // src/pages/ProductForm.tsx
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, Package } from 'lucide-react'
+import { ArrowLeft, Save, Package, X, ArrowUp, ArrowDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { useProducts } from '@/hooks/useProducts'
@@ -12,6 +12,7 @@ import { uploadImagesToBucket, removeImagesFromBucket, derivePathFromPublicUrl }
 import type { ImageRef } from '@/types'
 
 const EDGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-products`
+
 
 function ProductSkeleton() {
   return (
@@ -42,6 +43,15 @@ function ProductSkeleton() {
   )
 }
 
+function slugify(raw: string) {
+  return raw
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/--+/g, '-')
+}
+
 async function authHeaders() {
   const { data: { session } } = await supabase.auth.getSession()
   return {
@@ -63,6 +73,8 @@ type ProductDetail = {
   features?: string[]
   ingredients?: string[]
   category?: { id: string; name: string } | null
+  category_id?: string
+  category_name?: string
 }
 
 export default function ProductForm() {
@@ -87,6 +99,10 @@ export default function ProductForm() {
     ingredients: [] as string[],
   })
 
+  const [featuresInput, setFeaturesInput] = useState('')
+  const [ingredientsInput, setIngredientsInput] = useState('')
+  const [touchedSlug, setTouchedSlug] = useState(false)
+
   // primera variante (solo crear)
   const [variantForm, setVariantForm] = useState({
     sku: '',
@@ -107,15 +123,24 @@ export default function ProductForm() {
   const [productFiles, setProductFiles] = useState<File[]>([])
   const [productAlts, setProductAlts] = useState<string[]>([])
 
-  const onProductFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const arr = e.target.files ? Array.from(e.target.files) : []
-    setProductFiles(arr)
-    setProductAlts(arr.map(() => ''))
+  // ---------- Helpers ----------
+  function addFromTextarea(raw: string, current: string[], setFn: (arr: string[]) => void) {
+    const tokens = raw.split(/,|\n/).map(t => t.trim()).filter(Boolean)
+    const merged = Array.from(new Set([...current, ...tokens]))
+    setFn(merged)
   }
-  const onProductAlt = (i: number, val: string) => {
-    setProductAlts(prev => prev.map((a, idx) => (idx === i ? val : a)))
+  function removeAt(i: number, current: string[], setFn: (arr: string[]) => void) {
+    setFn(current.filter((_, idx) => idx !== i))
+  }
+  function moveIdx(i: number, dir: -1 | 1, current: string[], setFn: (arr: string[]) => void) {
+    const j = i + dir
+    if (j < 0 || j >= current.length) return
+    const arr = [...current]
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    setFn(arr)
   }
 
+  // ---------- Effects ----------
   useEffect(() => {
     const loadDetail = async () => {
       if (!isEditing || !id) return
@@ -143,8 +168,8 @@ export default function ProductForm() {
           images: normalized,
           features: p.features || [],
           ingredients: p.ingredients || [],
-          category_id: p.category?.id || '',
-          category_name: p.category?.name || '',
+          category_id: p.category?.id || p.category_id || '',
+          category_name: p.category?.name || p.category_name || '',
         }))
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Error cargando producto')
@@ -155,6 +180,15 @@ export default function ProductForm() {
     loadDetail()
   }, [isEditing, id])
 
+  // ---------- Handlers ----------
+  const onProductFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const arr = e.target.files ? Array.from(e.target.files) : []
+    setProductFiles(arr)
+    setProductAlts(arr.map(() => ''))
+  }
+  const onProductAlt = (i: number, val: string) => {
+    setProductAlts(prev => prev.map((a, idx) => (idx === i ? val : a)))
+  }
   const onProductChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     const v = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
@@ -162,6 +196,17 @@ export default function ProductForm() {
       const sel = categories.find(c => c.id === value)
       setFormData(prev => ({ ...prev, category_id: value, category_name: sel?.name || '' }))
       return
+    }
+    if (name === 'name') {
+      setFormData(prev => ({
+        ...prev,
+        name: v as string,
+        slug: touchedSlug ? prev.slug : slugify(String(v))
+      }))
+      return
+    }
+    if (name === 'slug') {
+      setTouchedSlug(true)
     }
     setFormData(prev => ({ ...prev, [name]: v as any }))
   }
@@ -178,6 +223,7 @@ export default function ProductForm() {
     setVariantForm(prev => ({ ...prev, alts: prev.alts.map((a, idx) => (idx === i ? val : a)) }))
   }
 
+  // ---------- Submit ----------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -193,7 +239,7 @@ export default function ProductForm() {
       if (isEditing && id) {
         const payload = {
           name: formData.name.trim(),
-          slug: formData.slug.trim(),
+          slug: slugify(formData.slug.trim()),
           description: formData.description,
           long_description: formData.long_description,
           is_featured: formData.is_featured,
@@ -201,6 +247,8 @@ export default function ProductForm() {
           images: uploadedProductImages.length ? uploadedProductImages : formData.images,
           features: formData.features,
           ingredients: formData.ingredients,
+          category_id: formData.category_id || null   // 👈 FALTA ESTO
+
         }
         await updateProduct(id, payload as any)
         toast.success('Producto actualizado')
@@ -220,7 +268,7 @@ export default function ProductForm() {
 
         const productPayload = {
           name: formData.name.trim(),
-          slug: formData.slug.trim(),
+          slug: slugify(formData.slug.trim()),
           description: formData.description,
           long_description: formData.long_description,
           is_featured: formData.is_featured,
@@ -259,7 +307,6 @@ export default function ProductForm() {
   }
 
   if (loading && isEditing) return <ProductSkeleton />
-
   return (
     <div>
       <div className="mb-8">
@@ -279,28 +326,21 @@ export default function ProductForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Información básica */}
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-6">Información Básica</h3>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+              <label className="block text-sm font-medium mb-1">Nombre *</label>
               <input className="input-field" name="name" required value={formData.name} onChange={onProductChange} placeholder="Creatina CH+" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
+              <label className="block text-sm font-medium mb-1">Slug *</label>
               <input className="input-field" name="slug" required value={formData.slug} onChange={onProductChange} placeholder="creatina-ch" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-              <select
-                name="category_id"
-                required
-                value={formData.category_id}
-                onChange={onProductChange}
-                className="input-field"
-                disabled={categoriesLoading}
-              >
+              <label className="block text-sm font-medium mb-1">Categoría *</label>
+              <select name="category_id" required value={formData.category_id} onChange={onProductChange} className="input-field" disabled={categoriesLoading}>
                 <option value="">{categoriesLoading ? 'Cargando…' : 'Selecciona…'}</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -317,16 +357,96 @@ export default function ProductForm() {
             </div>
           </div>
 
+          {/* Descripciones */}
           <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <label className="block text-sm font-medium mb-1">Descripción</label>
             <textarea className="input-field" rows={3} name="description" value={formData.description} onChange={onProductChange} />
           </div>
           <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción Larga</label>
+            <label className="block text-sm font-medium mb-1">Descripción Larga</label>
             <textarea className="input-field" rows={5} name="long_description" value={formData.long_description} onChange={onProductChange} />
           </div>
 
-          {/* Subida de nuevas imágenes */}
+          {/* Features e ingredientes con UX chips */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Features */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Features</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.features.map((t, i) => (
+                  <span key={`${t}-${i}`} className="inline-flex items-center rounded-full bg-gray-100 pl-2 pr-1 py-1 text-xs">
+                    {t}
+                    <button type="button" className="ml-1 p-0.5" onClick={() => moveIdx(i, -1, formData.features, arr => setFormData(p => ({ ...p, features: arr })))}><ArrowUp className="w-3 h-3" /></button>
+                    <button type="button" className="p-0.5" onClick={() => moveIdx(i, +1, formData.features, arr => setFormData(p => ({ ...p, features: arr })))}><ArrowDown className="w-3 h-3" /></button>
+                    <button type="button" className="ml-1 p-0.5 text-gray-500 hover:text-gray-700" onClick={() => removeAt(i, formData.features, arr => setFormData(p => ({ ...p, features: arr })))}><X className="w-3 h-3" /></button>
+                  </span>
+                ))}
+              </div>
+              <textarea
+                className="input-field"
+                rows={2}
+                placeholder="Micronizada, Sin azúcar, ..."
+                value={featuresInput}
+                onChange={(e) => setFeaturesInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (!featuresInput.trim()) return
+                    addFromTextarea(featuresInput, formData.features, arr => setFormData(p => ({ ...p, features: arr })))
+                    setFeaturesInput('')
+                  }
+                }}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData('text')
+                  if (text && (text.includes(',') || text.includes('\n'))) {
+                    e.preventDefault()
+                    addFromTextarea(text, formData.features, arr => setFormData(p => ({ ...p, features: arr })))
+                    setFeaturesInput('')
+                  }
+                }}
+              />
+            </div>
+
+            {/* Ingredientes */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Ingredientes</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.ingredients.map((t, i) => (
+                  <span key={`${t}-${i}`} className="inline-flex items-center rounded-full bg-gray-100 pl-2 pr-1 py-1 text-xs">
+                    {t}
+                    <button type="button" className="ml-1 p-0.5" onClick={() => moveIdx(i, -1, formData.ingredients, arr => setFormData(p => ({ ...p, ingredients: arr })))}><ArrowUp className="w-3 h-3" /></button>
+                    <button type="button" className="p-0.5" onClick={() => moveIdx(i, +1, formData.ingredients, arr => setFormData(p => ({ ...p, ingredients: arr })))}><ArrowDown className="w-3 h-3" /></button>
+                    <button type="button" className="ml-1 p-0.5 text-gray-500 hover:text-gray-700" onClick={() => removeAt(i, formData.ingredients, arr => setFormData(p => ({ ...p, ingredients: arr })))}><X className="w-3 h-3" /></button>
+                  </span>
+                ))}
+              </div>
+              <textarea
+                className="input-field"
+                rows={2}
+                placeholder="Creatina monohidratada, Saborizante..."
+                value={ingredientsInput}
+                onChange={(e) => setIngredientsInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (!ingredientsInput.trim()) return
+                    addFromTextarea(ingredientsInput, formData.ingredients, arr => setFormData(p => ({ ...p, ingredients: arr })))
+                    setIngredientsInput('')
+                  }
+                }}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData('text')
+                  if (text && (text.includes(',') || text.includes('\n'))) {
+                    e.preventDefault()
+                    addFromTextarea(text, formData.ingredients, arr => setFormData(p => ({ ...p, ingredients: arr })))
+                    setIngredientsInput('')
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Imágenes */}
           <div className="mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">Imágenes del producto</label>
             <input
@@ -335,29 +455,21 @@ export default function ProductForm() {
               multiple
               onChange={onProductFiles}
               className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200"
-            />
-            {productFiles.length > 0 && (
+            />            {productFiles.length > 0 && (
               <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {productFiles.map((f, i) => (
                   <div key={i} className="border rounded p-2">
                     <img src={URL.createObjectURL(f)} alt="" className="h-24 w-full object-cover rounded" />
-                    <input
-                      type="text"
-                      placeholder="Alt opcional"
-                      value={productAlts[i] || ''}
-                      onChange={e => onProductAlt(i, e.target.value)}
-                      className="mt-2 input-field"
-                    />
+                    <input type="text" placeholder="Alt opcional" value={productAlts[i] || ''} onChange={e => onProductAlt(i, e.target.value)} className="mt-2 input-field" />
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Imágenes existentes */}
           {formData.images && formData.images.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm text-gray-700 font-medium mb-2">Imágenes existentes</p>
+              <p className="text-sm font-medium mb-2">Imágenes existentes</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {formData.images.map((img, i) => {
                   const url = typeof img === 'string' ? img : img.url
@@ -370,22 +482,19 @@ export default function ProductForm() {
                         className="absolute top-2 right-2 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded shadow"
                         onClick={async () => {
                           try {
-                            const path = typeof img === 'string' ? derivePathFromPublicUrl(url) : img.path || derivePathFromPublicUrl(url)
+                            const path = typeof img === 'string'
+                              ? derivePathFromPublicUrl(url)
+                              : img.path || derivePathFromPublicUrl(url)
                             if (path) await removeImagesFromBucket([path])
-
-                            const next = [...formData.images]
-                            next.splice(i, 1)
+                            const next = [...formData.images]; next.splice(i, 1)
                             setFormData(prev => ({ ...prev, images: next }))
-
                             if (isEditing && id) await updateProduct(id, { images: next } as any)
                             toast.success('Imagen eliminada')
                           } catch {
                             toast.error('No se pudo eliminar la imagen')
                           }
                         }}
-                      >
-                        Eliminar
-                      </button>
+                      >Eliminar</button>
                     </div>
                   )
                 })}
@@ -394,10 +503,10 @@ export default function ProductForm() {
           )}
         </div>
 
-        {/* Primera variante (solo crear) */}
+        {/* Primera variante */}
         {!isEditing && (
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-6">Primera Variante</h3>
+            <h3 className="text-lg font-medium mb-6">Primera Variante</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-1">SKU *</label>
@@ -408,11 +517,11 @@ export default function ProductForm() {
                 <input className="input-field" required name="label" value={variantForm.label} onChange={onVariantChange} placeholder="300g Vainilla" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Sabor (flavor)</label>
+                <label className="block text-sm font-medium mb-1">Sabor</label>
                 <input className="input-field" name="flavor" value={variantForm.flavor} onChange={onVariantChange} placeholder="Vainilla" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Tamaño (size)</label>
+                <label className="block text-sm font-medium mb-1">Tamaño</label>
                 <input className="input-field" name="size" value={variantForm.size} onChange={onVariantChange} placeholder="300g" />
               </div>
               <div>
@@ -431,39 +540,19 @@ export default function ProductForm() {
                 <label className="block text-sm font-medium mb-1">Low Stock *</label>
                 <input className="input-field" required type="number" name="low_stock_threshold" value={variantForm.low_stock_threshold} onChange={onVariantChange} placeholder="5" />
               </div>
-
               <div className="md:col-span-3">
                 <label className="block text-sm font-medium mb-1">Imágenes de la variante</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={onFirstVariantFiles}
-                  className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200"
-                />
+                <input type="file" accept="image/*" multiple onChange={onFirstVariantFiles} />
                 {variantForm.files.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
                     {variantForm.files.map((f, i) => (
                       <div key={i} className="border rounded p-2">
                         <img src={URL.createObjectURL(f)} alt="" className="h-24 w-full object-cover rounded" />
-                        <input
-                          type="text"
-                          placeholder="Alt opcional"
-                          value={variantForm.alts[i] || ''}
-                          onChange={e => onFirstVariantAlt(i, e.target.value)}
-                          className="mt-2 input-field"
-                        />
+                        <input type="text" placeholder="Alt opcional" value={variantForm.alts[i] || ''} onChange={e => onFirstVariantAlt(i, e.target.value)} className="mt-2 input-field" />
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="flex items-end">
-                <label className="flex items-center">
-                  <input type="checkbox" name="is_default" checked={variantForm.is_default} onChange={onVariantChange} className="h-4 w-4" />
-                  <span className="ml-2 text-sm">Marcar como default</span>
-                </label>
               </div>
             </div>
           </div>
@@ -477,11 +566,7 @@ export default function ProductForm() {
         </div>
       </form>
 
-      {isEditing && id && (
-        <div className="mt-8">
-          <VariantsPanel productId={id} />
-        </div>
-      )}
-    </div> 
+      {isEditing && id && <div className="mt-8"><VariantsPanel productId={id} /></div>}
+    </div>
   )
 }
