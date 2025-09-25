@@ -75,6 +75,7 @@ type ProductDetail = {
   category?: { id: string; name: string } | null
   category_id?: string
   category_name?: string
+  nutrition_facts?: any
 }
 
 export default function ProductForm() {
@@ -97,6 +98,14 @@ export default function ProductForm() {
     images: [] as { url: string; alt?: string; path?: string }[],
     features: [] as string[],
     ingredients: [] as string[],
+  })
+
+  const [nutritionFacts, setNutritionFacts] = useState({
+    serving_size: '',
+    servings_per_container: '',
+    notes: '',
+    allergens: [] as string[],
+    nutrients: [] as { name: string; amount: string; unit: string; }[],
   })
 
   const [featuresInput, setFeaturesInput] = useState('')
@@ -171,6 +180,14 @@ export default function ProductForm() {
           category_id: p.category?.id || p.category_id || '',
           category_name: p.category?.name || p.category_name || '',
         }))
+
+        setNutritionFacts(p.nutrition_facts || {
+          serving_size: '',
+          servings_per_container: '',
+          notes: '',
+          allergens: [],
+          nutrients: []
+        })
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Error cargando producto')
       } finally {
@@ -236,6 +253,17 @@ export default function ProductForm() {
         uploadedProductImages = uploaded.map((u, i) => ({ url: u.url, path: u.path, alt: productAlts[i] || '' }))
       }
 
+      // 👇 Limpieza de nutrientes (quita los vacíos)
+      const cleanedNutrients = nutritionFacts.nutrients.filter(
+        (n) => n.name.trim() && n.amount.trim() && n.unit.trim()
+      )
+
+      const cleanedNutritionFacts = {
+        ...nutritionFacts,
+        nutrients: cleanedNutrients
+      }
+
+
       if (isEditing && id) {
         const payload = {
           name: formData.name.trim(),
@@ -247,8 +275,8 @@ export default function ProductForm() {
           images: uploadedProductImages.length ? uploadedProductImages : formData.images,
           features: formData.features,
           ingredients: formData.ingredients,
-          category_id: formData.category_id || null   // 👈 FALTA ESTO
-
+          category_id: formData.category_id || null,
+          nutrition_facts: cleanedNutritionFacts
         }
         await updateProduct(id, payload as any)
         toast.success('Producto actualizado')
@@ -276,7 +304,8 @@ export default function ProductForm() {
           images: uploadedProductImages.length ? uploadedProductImages : formData.images,
           features: formData.features,
           ingredients: formData.ingredients,
-          category_name: formData.category_name
+          category_name: formData.category_name,
+          nutrition_facts: cleanedNutritionFacts
         }
 
         const variantPayload = {
@@ -328,7 +357,6 @@ export default function ProductForm() {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Información básica */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6">Información Básica</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-1">Nombre *</label>
@@ -501,6 +529,82 @@ export default function ProductForm() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Información Nutricional */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">Información Nutricional</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-1">Tamaño por porción</label>
+              <input className="input-field" value={nutritionFacts.serving_size}
+                onChange={(e) => setNutritionFacts(f => ({ ...f, serving_size: e.target.value }))} placeholder="30 g" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Porciones por envase</label>
+              <input className="input-field" value={nutritionFacts.servings_per_container}
+                onChange={(e) => setNutritionFacts(f => ({ ...f, servings_per_container: e.target.value }))} placeholder="30" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <label className="block text-sm font-medium mb-1">Notas</label>
+            <textarea className="input-field" rows={2} value={nutritionFacts.notes}
+              onChange={(e) => setNutritionFacts(f => ({ ...f, notes: e.target.value }))} placeholder="Valores aproximados." />
+          </div>
+          <div className="mt-6">
+            <label className="block text-sm font-medium mb-2">Nutrientes</label>
+            <div className="space-y-3">
+              {nutritionFacts.nutrients.map((n, i) => (
+                <div key={i} className="grid grid-cols-4 gap-2 items-center">
+                  <input
+                    className="input-field col-span-1"
+                    placeholder="Nombre"
+                    value={n.name}
+                    onChange={(e) => {
+                      const arr = [...nutritionFacts.nutrients]
+                      arr[i].name = e.target.value
+                      setNutritionFacts(f => ({ ...f, nutrients: arr }))
+                    }}
+                  />
+                  <input
+                    className="input-field col-span-1"
+                    placeholder="Cantidad"
+                    value={n.amount}
+                    onChange={(e) => {
+                      const arr = [...nutritionFacts.nutrients]
+                      arr[i].amount = e.target.value
+                      setNutritionFacts(f => ({ ...f, nutrients: arr }))
+                    }}
+                  />
+                  <input
+                    className="input-field col-span-1"
+                    placeholder="Unidad"
+                    value={n.unit}
+                    onChange={(e) => {
+                      const arr = [...nutritionFacts.nutrients]
+                      arr[i].unit = e.target.value
+                      setNutritionFacts(f => ({ ...f, nutrients: arr }))
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const arr = [...nutritionFacts.nutrients]
+                      arr.splice(i, 1)
+                      setNutritionFacts(f => ({ ...f, nutrients: arr }))
+                    }}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    ❌
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="btn-secondary mt-3"
+              onClick={() => setNutritionFacts(f => ({ ...f, nutrients: [...f.nutrients, { name: '', amount: '', unit: '' }] }))}>
+              + Agregar Nutriente
+            </button>
+          </div>
         </div>
 
         {/* Primera variante */}
