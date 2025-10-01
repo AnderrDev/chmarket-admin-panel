@@ -1,5 +1,6 @@
 // src/components/product-form/FeaturesAndIngredients.tsx
 import { ArrowUp, ArrowDown, X } from 'lucide-react'
+import { useAutoResize } from '@/hooks/useAutoResize'
 
 interface FeaturesAndIngredientsProps {
     features: string[]
@@ -22,6 +23,8 @@ export default function FeaturesAndIngredients({
     onFeaturesChange,
     onIngredientsChange
 }: FeaturesAndIngredientsProps) {
+    const { textareaRef: featuresRef, handleInput: handleFeaturesInput } = useAutoResize()
+    const { textareaRef: ingredientsRef, handleInput: handleIngredientsInput } = useAutoResize()
     // Helper functions
     function addFromTextarea(raw: string, current: string[], setFn: (arr: string[]) => void) {
         const tokens = raw.split(/,|\n/).map(t => t.trim()).filter(Boolean)
@@ -50,6 +53,11 @@ export default function FeaturesAndIngredients({
         }
     }
 
+    const handleFeaturesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleFeaturesInput(e)
+        setFeaturesInput(e.target.value)
+    }
+
     const handleFeaturesPaste = (e: React.ClipboardEvent) => {
         const text = e.clipboardData.getData('text')
         if (text && (text.includes(',') || text.includes('\n'))) {
@@ -66,6 +74,11 @@ export default function FeaturesAndIngredients({
             addFromTextarea(ingredientsInput, ingredients, onIngredientsChange)
             setIngredientsInput('')
         }
+    }
+
+    const handleIngredientsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleIngredientsInput(e)
+        setIngredientsInput(e.target.value)
     }
 
     const handleIngredientsPaste = (e: React.ClipboardEvent) => {
@@ -111,11 +124,12 @@ export default function FeaturesAndIngredients({
                     ))}
                 </div>
                 <textarea
-                    className="input-field"
+                    ref={featuresRef}
+                    className="input-field resize-none overflow-hidden"
                     rows={2}
                     placeholder="Micronizada, Sin azúcar, ..."
                     value={featuresInput}
-                    onChange={(e) => setFeaturesInput(e.target.value)}
+                    onChange={handleFeaturesChange}
                     onKeyDown={handleFeaturesKeyDown}
                     onPaste={handleFeaturesPaste}
                 />
@@ -153,11 +167,12 @@ export default function FeaturesAndIngredients({
                     ))}
                 </div>
                 <textarea
-                    className="input-field"
+                    ref={ingredientsRef}
+                    className="input-field resize-none overflow-hidden"
                     rows={2}
                     placeholder="Creatina monohidratada, Saborizante..."
                     value={ingredientsInput}
-                    onChange={(e) => setIngredientsInput(e.target.value)}
+                    onChange={handleIngredientsChange}
                     onKeyDown={handleIngredientsKeyDown}
                     onPaste={handleIngredientsPaste}
                 />

@@ -1,5 +1,6 @@
 // src/components/product-form/BasicProductInfo.tsx
 import { Category } from '@/types'
+import { useAutoResize } from '@/hooks/useAutoResize'
 
 interface BasicProductInfoProps {
     formData: {
@@ -24,8 +25,21 @@ export default function BasicProductInfo({
     onProductChange,
     setTouchedSlug
 }: BasicProductInfoProps) {
+    const { textareaRef: descriptionRef, handleInput: handleDescriptionInput } = useAutoResize()
+    const { textareaRef: longDescriptionRef, handleInput: handleLongDescriptionInput } = useAutoResize()
+
     const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTouchedSlug(true)
+        onProductChange(e)
+    }
+
+    const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleDescriptionInput(e)
+        onProductChange(e)
+    }
+
+    const handleLongDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleLongDescriptionInput(e)
         onProductChange(e)
     }
 
@@ -98,21 +112,25 @@ export default function BasicProductInfo({
             <div className="mt-6">
                 <label className="block text-sm font-medium mb-1">Descripción</label>
                 <textarea
-                    className="input-field"
+                    ref={descriptionRef}
+                    className="input-field resize-none overflow-hidden"
                     rows={3}
                     name="description"
                     value={formData.description}
-                    onChange={onProductChange}
+                    onChange={handleDescriptionChange}
+                    placeholder="Descripción corta del producto..."
                 />
             </div>
             <div className="mt-6">
                 <label className="block text-sm font-medium mb-1">Descripción Larga</label>
                 <textarea
-                    className="input-field"
+                    ref={longDescriptionRef}
+                    className="input-field resize-none overflow-hidden"
                     rows={5}
                     name="long_description"
                     value={formData.long_description}
-                    onChange={onProductChange}
+                    onChange={handleLongDescriptionChange}
+                    placeholder="Descripción detallada del producto, beneficios, modo de uso..."
                 />
             </div>
         </div>

@@ -1,4 +1,5 @@
 // src/components/product-form/NutritionFacts.tsx
+import { useAutoResize } from '@/hooks/useAutoResize'
 
 interface NutritionFactsProps {
     nutritionFacts: {
@@ -15,6 +16,7 @@ export default function NutritionFacts({
     nutritionFacts,
     onNutritionFactsChange
 }: NutritionFactsProps) {
+    const { textareaRef: notesRef, handleInput: handleNotesInput } = useAutoResize()
     const handleNutrientChange = (index: number, field: string, value: string) => {
         const arr = [...nutritionFacts.nutrients]
         arr[index] = { ...arr[index], [field]: value }
@@ -32,6 +34,11 @@ export default function NutritionFacts({
             ...nutritionFacts,
             nutrients: [...nutritionFacts.nutrients, { name: '', amount: '', unit: '' }]
         })
+    }
+
+    const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleNotesInput(e)
+        onNutritionFactsChange({ ...nutritionFacts, notes: e.target.value })
     }
 
     return (
@@ -62,10 +69,11 @@ export default function NutritionFacts({
             <div className="mt-4">
                 <label className="block text-sm font-medium mb-1">Notas</label>
                 <textarea
-                    className="input-field"
+                    ref={notesRef}
+                    className="input-field resize-none overflow-hidden"
                     rows={2}
                     value={nutritionFacts.notes}
-                    onChange={(e) => onNutritionFactsChange({ ...nutritionFacts, notes: e.target.value })}
+                    onChange={handleNotesChange}
                     placeholder="Valores aproximados."
                 />
             </div>
