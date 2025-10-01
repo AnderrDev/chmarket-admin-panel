@@ -35,9 +35,15 @@ export function useProductForm() {
         nutrients: [],
     })
 
+    const generateUniqueSKU = () => {
+        const timestamp = Date.now().toString().slice(-6)
+        const random = Math.random().toString(36).substring(2, 5).toUpperCase()
+        return `SKU-${timestamp}-${random}`
+    }
+
     const [variantsData, setVariantsData] = useState<MultipleVariantsData>({
         variants: [{
-            sku: '',
+            sku: generateUniqueSKU(),
             label: '',
             flavor: '',
             size: '',
@@ -150,7 +156,7 @@ export function useProductForm() {
     const addVariant = () => {
         setVariantsData(prev => ({
             variants: [...prev.variants, {
-                sku: '',
+                sku: generateUniqueSKU(),
                 label: '',
                 flavor: '',
                 size: '',

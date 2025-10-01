@@ -184,20 +184,20 @@ export function useProductSubmit() {
                 const variantsWithImages = await Promise.all(
                     variantsData.variants.map(async (variant: any) => {
                         const variantImages = await handleImageUpload(
-                            variant.files,
+                            variant.files || [],
                             `variants/temp-${crypto.randomUUID()}`,
-                            variant.alts
+                            variant.alts || []
                         )
                         return {
-                            sku: variant.sku.trim(),
-                            label: variant.label.trim(),
-                            flavor: variant.flavor.trim() || undefined,
-                            size: variant.size.trim() || undefined,
-                            price_cents: parseInt(variant.price_cents || '0', 10),
-                            compare_at_price_cents: variant.compare_at_price_cents ? parseInt(variant.compare_at_price_cents, 10) : undefined,
-                            in_stock: parseInt(variant.in_stock || '0', 10),
-                            low_stock_threshold: parseInt(variant.low_stock_threshold || '5', 10),
-                            is_default: variant.is_default,
+                            sku: String(variant.sku || '').trim(),
+                            label: String(variant.label || '').trim(),
+                            flavor: variant.flavor && variant.flavor.trim() ? String(variant.flavor).trim() : undefined,
+                            size: variant.size && variant.size.trim() ? String(variant.size).trim() : undefined,
+                            price_cents: parseInt(String(variant.price_cents || '0'), 10),
+                            compare_at_price_cents: variant.compare_at_price_cents ? parseInt(String(variant.compare_at_price_cents), 10) : undefined,
+                            in_stock: parseInt(String(variant.in_stock || '0'), 10),
+                            low_stock_threshold: parseInt(String(variant.low_stock_threshold || '5'), 10),
+                            is_default: Boolean(variant.is_default),
                             images: variantImages
                         }
                     })
@@ -205,19 +205,38 @@ export function useProductSubmit() {
 
                 const cleanedNutritionFacts = cleanNutritionFacts(nutritionFacts)
 
+                // Ensure arrays are properly formatted
+                const features = Array.isArray(formData.features) ? formData.features : []
+                const ingredients = Array.isArray(formData.ingredients) ? formData.ingredients : []
+
+                // Clean nutrition facts to ensure proper format
+                const cleanNutritionFactsForRPC = {
+                    serving_size: String(cleanedNutritionFacts.serving_size || ''),
+                    servings_per_container: String(cleanedNutritionFacts.servings_per_container || ''),
+                    notes: String(cleanedNutritionFacts.notes || ''),
+                    allergens: Array.isArray(cleanedNutritionFacts.allergens) ? cleanedNutritionFacts.allergens : [],
+                    nutrients: Array.isArray(cleanedNutritionFacts.nutrients) ? cleanedNutritionFacts.nutrients : []
+                }
+
                 const productPayload = {
                     name: formData.name.trim(),
                     slug: slugify(formData.slug.trim()),
-                    description: formData.description,
-                    long_description: formData.long_description,
-                    is_featured: formData.is_featured,
-                    is_active: formData.is_active,
-                    images: uploadedProductImages.length ? uploadedProductImages : formData.images,
-                    features: formData.features,
-                    ingredients: formData.ingredients,
-                    category_name: formData.category_name,
-                    nutrition_facts: cleanedNutritionFacts
+                    description: formData.description || '',
+                    long_description: formData.long_description || '',
+                    is_featured: Boolean(formData.is_featured),
+                    is_active: Boolean(formData.is_active),
+                    images: uploadedProductImages.length ? uploadedProductImages : (formData.images || []),
+                    features: features,
+                    ingredients: ingredients,
+                    category_id: formData.category_id && formData.category_id !== '' ? formData.category_id : null,
+                    category_name: formData.category_name || '',
+                    nutrition_facts: cleanNutritionFactsForRPC
                 }
+
+                console.log('=== DEBUGGING PRODUCT CREATION ===')
+                console.log('Product payload:', JSON.stringify(productPayload, null, 2))
+                console.log('Variants payload:', JSON.stringify(variantsWithImages, null, 2))
+                console.log('Full payload to RPC:', JSON.stringify({ product: productPayload, variants: variantsWithImages }, null, 2))
 
                 const res = await createProduct(productPayload as any, variantsWithImages as any)
                 toast.success('Producto creado')

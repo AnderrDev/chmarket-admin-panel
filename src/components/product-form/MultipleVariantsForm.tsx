@@ -76,14 +76,31 @@ export default function MultipleVariantsForm({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label className="block text-sm font-medium mb-1">SKU *</label>
-                            <input
-                                className="input-field"
-                                required
-                                name="sku"
-                                value={variant.sku}
-                                onChange={(e) => handleVariantChange(index, e)}
-                                placeholder="CREA-300"
-                            />
+                            <div className="flex space-x-2">
+                                <input
+                                    className="input-field flex-1"
+                                    required
+                                    name="sku"
+                                    value={variant.sku}
+                                    onChange={(e) => handleVariantChange(index, e)}
+                                    placeholder="CREA-300"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const generateUniqueSKU = () => {
+                                            const timestamp = Date.now().toString().slice(-6)
+                                            const random = Math.random().toString(36).substring(2, 5).toUpperCase()
+                                            return `SKU-${timestamp}-${random}`
+                                        }
+                                        onUpdateVariant(index, 'sku', generateUniqueSKU())
+                                    }}
+                                    className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-md border"
+                                    title="Generar SKU único"
+                                >
+                                    🔄
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Label *</label>
