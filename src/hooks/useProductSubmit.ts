@@ -61,7 +61,6 @@ export function useProductSubmit() {
         nutritionFacts: any,
         variantsData: any,
         productFiles: File[],
-        productAlts: string[],
         isEditing: boolean,
         productId?: string,
         changeDetection?: {
@@ -71,7 +70,8 @@ export function useProductSubmit() {
             getChangedVariants: () => Array<{ index: number; variant: any; action: 'create' | 'update' | 'delete' }>,
             originalFormData: any,
             originalVariantsData: any
-        }
+        },
+        setFormData?: (updater: (prev: any) => any) => void
     ) => {
         if (!validateForm(formData, variantsData, isEditing)) return
 
@@ -86,7 +86,7 @@ export function useProductSubmit() {
                     const uploadedProductImages = await handleImageUpload(
                         productFiles,
                         `products/${productId}`,
-                        productAlts
+                        []
                     )
 
                     const payload = {
@@ -96,13 +96,22 @@ export function useProductSubmit() {
                         long_description: formData.long_description,
                         is_featured: formData.is_featured,
                         is_active: formData.is_active,
-                        images: uploadedProductImages.length ? uploadedProductImages : formData.images,
+                        images: uploadedProductImages.length ? [...formData.images, ...uploadedProductImages] : formData.images,
                         features: formData.features,
                         ingredients: formData.ingredients,
                         category_id: formData.category_id || null,
                         nutrition_facts: changeDetection.hasNutritionChanges() ? cleanNutritionFacts(nutritionFacts) : undefined
                     }
                     await updateProduct(productId, payload as any)
+
+                    // Update local state with new images
+                    if (setFormData && uploadedProductImages.length > 0) {
+                        setFormData(prev => ({
+                            ...prev,
+                            images: [...prev.images, ...uploadedProductImages]
+                        }))
+                    }
+
                     hasAnyChanges = true
                 } else if (changeDetection.hasNutritionChanges()) {
                     // Only update nutrition facts if product data didn't change
@@ -123,7 +132,7 @@ export function useProductSubmit() {
                             const variantImages = await handleImageUpload(
                                 change.variant.files,
                                 `variants/${productId}`,
-                                change.variant.alts
+                                []
                             )
 
                             const variantPayload = {
@@ -144,8 +153,12 @@ export function useProductSubmit() {
                             const variantImages = await handleImageUpload(
                                 change.variant.files,
                                 `variants/${productId}`,
-                                change.variant.alts
+                                []
                             )
+
+                            // Get existing variant to preserve existing images
+                            const existingVariant = existingVariants[change.index]
+                            const existingImages = existingVariant?.images || []
 
                             const variantPayload = {
                                 sku: change.variant.sku.trim(),
@@ -157,7 +170,7 @@ export function useProductSubmit() {
                                 in_stock: parseInt(change.variant.in_stock || '0', 10),
                                 low_stock_threshold: parseInt(change.variant.low_stock_threshold || '5', 10),
                                 is_default: change.variant.is_default,
-                                ...(variantImages.length > 0 ? { images: variantImages } : {})
+                                ...(variantImages.length > 0 ? { images: [...existingImages, ...variantImages] } : {})
                             }
                             await updateVariant(existingVariantIds[change.index], variantPayload)
                         } else if (change.action === 'delete') {
@@ -177,7 +190,7 @@ export function useProductSubmit() {
                 const uploadedProductImages = await handleImageUpload(
                     productFiles,
                     `products/temp-${crypto.randomUUID()}`,
-                    productAlts
+                    []
                 )
 
                 // Upload variant images for all variants
@@ -186,7 +199,7 @@ export function useProductSubmit() {
                         const variantImages = await handleImageUpload(
                             variant.files || [],
                             `variants/temp-${crypto.randomUUID()}`,
-                            variant.alts || []
+                            []
                         )
                         return {
                             sku: String(variant.sku || '').trim(),
@@ -247,9 +260,11 @@ export function useProductSubmit() {
         } catch (err) {
             console.error(err)
             toast.error('Error al guardar el producto')
+            return false
         } finally {
             setSaving(false)
         }
+        return true
     }
 
     return { saving, submitForm }

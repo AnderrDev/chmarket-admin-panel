@@ -53,7 +53,6 @@ export function useProductForm() {
             low_stock_threshold: '5',
             is_default: true,
             files: [],
-            alts: [],
         }]
     })
 
@@ -122,19 +121,27 @@ export function useProductForm() {
                 try {
                     const existingVariants = await getProductVariants(id)
                     if (existingVariants && existingVariants.length > 0) {
-                        const variantsFormData = existingVariants.map((variant: any) => ({
-                            sku: variant.sku || '',
-                            label: variant.label || '',
-                            flavor: variant.flavor || '',
-                            size: variant.size || '',
-                            price_cents: String(variant.price_cents || ''),
-                            compare_at_price_cents: variant.compare_at_price_cents ? String(variant.compare_at_price_cents) : '',
-                            in_stock: String(variant.in_stock || '0'),
-                            low_stock_threshold: String(variant.low_stock_threshold || '5'),
-                            is_default: Boolean(variant.is_default),
-                            files: [], // No cargamos archivos existentes, solo datos
-                            alts: [],
-                        }))
+                        const variantsFormData = existingVariants.map((variant: any) => {
+                            // Normalize existing images
+                            const existingImages = variant.images || []
+                            const normalizedImages = existingImages.map((img: any) =>
+                                typeof img === 'string' ? { url: img, alt: '' } : img
+                            )
+
+                            return {
+                                sku: variant.sku || '',
+                                label: variant.label || '',
+                                flavor: variant.flavor || '',
+                                size: variant.size || '',
+                                price_cents: String(variant.price_cents || ''),
+                                compare_at_price_cents: variant.compare_at_price_cents ? String(variant.compare_at_price_cents) : '',
+                                in_stock: String(variant.in_stock || '0'),
+                                low_stock_threshold: String(variant.low_stock_threshold || '5'),
+                                is_default: Boolean(variant.is_default),
+                                files: [], // New files to upload
+                                existingImages: normalizedImages, // Existing images from database
+                            }
+                        })
                         const variantsData = { variants: variantsFormData }
                         setVariantsData(variantsData)
                         setOriginalVariantsData(variantsData)
@@ -166,7 +173,6 @@ export function useProductForm() {
                 low_stock_threshold: '5',
                 is_default: false,
                 files: [],
-                alts: [],
             }]
         }))
     }

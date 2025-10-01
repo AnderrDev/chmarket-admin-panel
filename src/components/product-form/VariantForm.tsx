@@ -12,18 +12,15 @@ interface VariantFormProps {
         low_stock_threshold: string
         is_default: boolean
         files: File[]
-        alts: string[]
     }
     onVariantChange: (e: React.ChangeEvent<HTMLInputElement>) => void
     onFirstVariantFiles: (e: React.ChangeEvent<HTMLInputElement>) => void
-    onFirstVariantAlt: (i: number, val: string) => void
 }
 
 export default function VariantForm({
     variantForm,
     onVariantChange,
-    onFirstVariantFiles,
-    onFirstVariantAlt
+    onFirstVariantFiles
 }: VariantFormProps) {
     return (
         <div className="bg-white shadow rounded-lg p-6">
@@ -135,13 +132,6 @@ export default function VariantForm({
                                         src={URL.createObjectURL(f)}
                                         alt=""
                                         className="h-24 w-full object-cover rounded"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Alt opcional"
-                                        value={variantForm.alts[i] || ''}
-                                        onChange={e => onFirstVariantAlt(i, e.target.value)}
-                                        className="mt-2 input-field"
                                     />
                                 </div>
                             ))}

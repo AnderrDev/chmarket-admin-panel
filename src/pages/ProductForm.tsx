@@ -78,11 +78,9 @@ export default function ProductForm() {
 
   const {
     productFiles,
-    productAlts,
     handleProductFiles,
-    handleProductAlt,
     handleMultipleVariantFiles,
-    handleMultipleVariantAlt
+    resetProductFiles
   } = useFileHandling()
 
   const { handleProductChange } = useFormHandlers()
@@ -97,18 +95,14 @@ export default function ProductForm() {
     handleMultipleVariantFiles(variantIndex, e, setVariantsData)
   }
 
-  const onVariantAlt = (variantIndex: number, fileIndex: number, value: string) => {
-    handleMultipleVariantAlt(variantIndex, fileIndex, value, setVariantsData)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await submitForm(
+    const success = await submitForm(
       formData,
       nutritionFacts,
       variantsData,
       productFiles,
-      productAlts,
       isEditing,
       isEditing ? formData.id : undefined,
       isEditing ? {
@@ -118,8 +112,14 @@ export default function ProductForm() {
         getChangedVariants,
         originalFormData,
         originalVariantsData
-      } : undefined
+      } : undefined,
+      setFormData
     )
+
+    // Clear files after successful save
+    if (success) {
+      resetProductFiles()
+    }
   }
 
   if (loading && isEditing) return <ProductSkeleton />
@@ -167,12 +167,10 @@ export default function ProductForm() {
           {/* Imágenes */}
           <ImageUpload
             productFiles={productFiles}
-            productAlts={productAlts}
             existingImages={formData.images}
             isEditing={isEditing}
             productId={formData.id}
             onProductFiles={handleProductFiles}
-            onProductAlt={handleProductAlt}
             onRemoveExistingImage={(index) => {
               const next = [...formData.images]
               next.splice(index, 1)
@@ -198,7 +196,7 @@ export default function ProductForm() {
           onUpdateVariant={updateVariant}
           onSetVariantAsDefault={setVariantAsDefault}
           onVariantFiles={onVariantFiles}
-          onVariantAlt={onVariantAlt}
+          onVariantAlt={() => { }}
           isEditing={isEditing}
         />
 

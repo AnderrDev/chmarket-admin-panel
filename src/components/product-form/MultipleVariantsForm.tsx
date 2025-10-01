@@ -190,24 +190,42 @@ export default function MultipleVariantsForm({
                                 multiple
                                 onChange={(e) => onVariantFiles(index, e)}
                             />
+                            {/* Existing Images */}
+                            {variant.existingImages && variant.existingImages.length > 0 && (
+                                <div className="mt-3">
+                                    <h5 className="text-sm font-medium mb-2 text-gray-700">Imágenes existentes:</h5>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {variant.existingImages.map((img, i) => (
+                                            <div key={`existing-${i}`} className="border rounded p-2 bg-gray-50">
+                                                <img
+                                                    src={img.url}
+                                                    alt={img.alt || ''}
+                                                    className="h-24 w-full object-cover rounded"
+                                                />
+                                                <p className="mt-1 text-xs text-gray-600 truncate">
+                                                    {img.alt || 'Sin descripción'}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* New Images */}
                             {variant.files.length > 0 && (
-                                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {variant.files.map((f, i) => (
-                                        <div key={i} className="border rounded p-2">
-                                            <img
-                                                src={URL.createObjectURL(f)}
-                                                alt=""
-                                                className="h-24 w-full object-cover rounded"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Alt opcional"
-                                                value={variant.alts[i] || ''}
-                                                onChange={e => onVariantAlt(index, i, e.target.value)}
-                                                className="mt-2 input-field"
-                                            />
-                                        </div>
-                                    ))}
+                                <div className="mt-3">
+                                    <h5 className="text-sm font-medium mb-2 text-gray-700">Nuevas imágenes:</h5>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {variant.files.map((f, i) => (
+                                            <div key={`new-${i}`} className="border rounded p-2 bg-blue-50">
+                                                <img
+                                                    src={URL.createObjectURL(f)}
+                                                    alt=""
+                                                    className="h-24 w-full object-cover rounded"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                             {isEditing && (

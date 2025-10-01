@@ -33,7 +33,7 @@ export interface VariantFormData {
     low_stock_threshold: string
     is_default: boolean
     files: File[]
-    alts: string[]
+    existingImages?: { url: string; alt?: string; path?: string }[]
 }
 
 export interface MultipleVariantsData {

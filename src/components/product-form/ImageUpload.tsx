@@ -1,27 +1,22 @@
 // src/components/product-form/ImageUpload.tsx
-import { ImageRef } from '@/types'
 import { removeImagesFromBucket, derivePathFromPublicUrl } from '@/lib/upload'
 
 interface ImageUploadProps {
     productFiles: File[]
-    productAlts: string[]
     existingImages: { url: string; alt?: string; path?: string }[]
     isEditing: boolean
     productId?: string
     onProductFiles: (e: React.ChangeEvent<HTMLInputElement>) => void
-    onProductAlt: (i: number, val: string) => void
     onRemoveExistingImage: (index: number) => void
     onUpdateProduct?: (id: string, data: any) => Promise<void>
 }
 
 export default function ImageUpload({
     productFiles,
-    productAlts,
     existingImages,
     isEditing,
     productId,
     onProductFiles,
-    onProductAlt,
     onRemoveExistingImage,
     onUpdateProduct
 }: ImageUploadProps) {
@@ -67,13 +62,6 @@ export default function ImageUpload({
                                 src={URL.createObjectURL(f)}
                                 alt=""
                                 className="h-24 w-full object-cover rounded"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Alt opcional"
-                                value={productAlts[i] || ''}
-                                onChange={e => onProductAlt(i, e.target.value)}
-                                className="mt-2 input-field"
                             />
                         </div>
                     ))}
