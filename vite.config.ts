@@ -11,6 +11,37 @@ export default defineConfig({
   },
   server: {
     port: 3001,
-    open: true
+    open: true,
+    hmr: {
+      overlay: true
+    }
+  },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['lucide-react', 'react-hot-toast'],
+          forms: ['react-hook-form'],
+          supabase: ['@supabase/supabase-js']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'lucide-react',
+      'react-hot-toast',
+      'react-hook-form',
+      '@supabase/supabase-js'
+    ]
   }
 })

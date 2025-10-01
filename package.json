@@ -6,12 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "test": "echo \"No tests yet\" && exit 0",
+    "check": "npm run type-check && npm run lint && npm run format:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",
