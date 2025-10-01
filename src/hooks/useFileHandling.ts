@@ -27,12 +27,38 @@ export function useFileHandling() {
         }))
     }
 
+    const handleMultipleVariantFiles = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>, setVariantsData: any) => {
+        const arr = e.target.files ? Array.from(e.target.files) : []
+        setVariantsData((prev: any) => ({
+            variants: prev.variants.map((variant: any, i: number) =>
+                i === variantIndex
+                    ? { ...variant, files: arr, alts: arr.map(() => '') }
+                    : variant
+            )
+        }))
+    }
+
+    const handleMultipleVariantAlt = (variantIndex: number, fileIndex: number, value: string, setVariantsData: any) => {
+        setVariantsData((prev: any) => ({
+            variants: prev.variants.map((variant: any, i: number) =>
+                i === variantIndex
+                    ? {
+                        ...variant,
+                        alts: variant.alts.map((a: string, idx: number) => (idx === fileIndex ? value : a))
+                    }
+                    : variant
+            )
+        }))
+    }
+
     return {
         productFiles,
         productAlts,
         handleProductFiles,
         handleProductAlt,
         handleVariantFiles,
-        handleVariantAlt
+        handleVariantAlt,
+        handleMultipleVariantFiles,
+        handleMultipleVariantAlt
     }
 }

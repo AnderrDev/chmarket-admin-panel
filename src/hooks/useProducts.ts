@@ -38,11 +38,11 @@ export function useProducts() {
     }
   }, [])
 
-  const createProduct = useCallback(async (productData: any, firstVariantData: any): Promise<CreateRPCResponse> => {
+  const createProduct = useCallback(async (productData: any, variantsData: any[]): Promise<CreateRPCResponse> => {
     const res = await fetch(`${BASE}/products`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...AUTH },
-      body: JSON.stringify({ product: productData, variants: [firstVariantData] })
+      body: JSON.stringify({ product: productData, variants: variantsData })
     })
     const json = await res.json()
     if (!res.ok) {

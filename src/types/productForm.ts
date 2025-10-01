@@ -36,6 +36,10 @@ export interface VariantFormData {
     alts: string[]
 }
 
+export interface MultipleVariantsData {
+    variants: VariantFormData[]
+}
+
 export interface ProductDetail {
     id: string
     name: string

@@ -7,12 +7,11 @@ import { useProductForm } from '@/hooks/useProductForm'
 import { useFileHandling } from '@/hooks/useFileHandling'
 import { useFormHandlers } from '@/hooks/useFormHandlers'
 import { useProductSubmit } from '@/hooks/useProductSubmit'
-import VariantsPanel from '@/components/VariantsPanel'
 import BasicProductInfo from '@/components/product-form/BasicProductInfo'
 import FeaturesAndIngredients from '@/components/product-form/FeaturesAndIngredients'
 import ImageUpload from '@/components/product-form/ImageUpload'
 import NutritionFacts from '@/components/product-form/NutritionFacts'
-import VariantForm from '@/components/product-form/VariantForm'
+import MultipleVariantsForm from '@/components/product-form/MultipleVariantsForm'
 
 
 function ProductSkeleton() {
@@ -55,8 +54,12 @@ export default function ProductForm() {
     setFormData,
     nutritionFacts,
     setNutritionFacts,
-    variantForm,
-    setVariantForm,
+    variantsData,
+    setVariantsData,
+    addVariant,
+    removeVariant,
+    updateVariant,
+    setVariantAsDefault,
     featuresInput,
     setFeaturesInput,
     ingredientsInput,
@@ -64,7 +67,13 @@ export default function ProductForm() {
     touchedSlug,
     setTouchedSlug,
     loading,
-    isEditing
+    isEditing,
+    hasProductChanges,
+    hasNutritionChanges,
+    hasVariantsChanges,
+    getChangedVariants,
+    originalFormData,
+    originalVariantsData,
   } = useProductForm()
 
   const {
@@ -72,11 +81,11 @@ export default function ProductForm() {
     productAlts,
     handleProductFiles,
     handleProductAlt,
-    handleVariantFiles,
-    handleVariantAlt
+    handleMultipleVariantFiles,
+    handleMultipleVariantAlt
   } = useFileHandling()
 
-  const { handleProductChange, handleVariantChange } = useFormHandlers()
+  const { handleProductChange } = useFormHandlers()
   const { saving, submitForm } = useProductSubmit()
 
   // Event handlers
@@ -84,16 +93,12 @@ export default function ProductForm() {
     handleProductChange(e, formData, setFormData, touchedSlug, setTouchedSlug)
   }
 
-  const onVariantChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleVariantChange(e, setVariantForm)
+  const onVariantFiles = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    handleMultipleVariantFiles(variantIndex, e, setVariantsData)
   }
 
-  const onFirstVariantFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleVariantFiles(e, setVariantForm)
-  }
-
-  const onFirstVariantAlt = (i: number, val: string) => {
-    handleVariantAlt(i, val, setVariantForm)
+  const onVariantAlt = (variantIndex: number, fileIndex: number, value: string) => {
+    handleMultipleVariantAlt(variantIndex, fileIndex, value, setVariantsData)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,11 +106,19 @@ export default function ProductForm() {
     await submitForm(
       formData,
       nutritionFacts,
-      variantForm,
+      variantsData,
       productFiles,
       productAlts,
       isEditing,
-      isEditing ? formData.id : undefined
+      isEditing ? formData.id : undefined,
+      isEditing ? {
+        hasProductChanges,
+        hasNutritionChanges,
+        hasVariantsChanges,
+        getChangedVariants,
+        originalFormData,
+        originalVariantsData
+      } : undefined
     )
   }
 
@@ -177,15 +190,17 @@ export default function ProductForm() {
           onNutritionFactsChange={setNutritionFacts}
         />
 
-        {/* Primera variante */}
-        {!isEditing && (
-          <VariantForm
-            variantForm={variantForm}
-            onVariantChange={onVariantChangeHandler}
-            onFirstVariantFiles={onFirstVariantFiles}
-            onFirstVariantAlt={onFirstVariantAlt}
-          />
-        )}
+        {/* Variantes */}
+        <MultipleVariantsForm
+          variantsData={variantsData}
+          onAddVariant={addVariant}
+          onRemoveVariant={removeVariant}
+          onUpdateVariant={updateVariant}
+          onSetVariantAsDefault={setVariantAsDefault}
+          onVariantFiles={onVariantFiles}
+          onVariantAlt={onVariantAlt}
+          isEditing={isEditing}
+        />
 
         <div className="flex justify-end space-x-4">
           <button type="button" onClick={() => navigate('/products')} className="btn-secondary">Cancelar</button>
@@ -195,7 +210,6 @@ export default function ProductForm() {
         </div>
       </form>
 
-      {isEditing && formData.id && <div className="mt-8"><VariantsPanel productId={formData.id} /></div>}
     </div>
   )
 }

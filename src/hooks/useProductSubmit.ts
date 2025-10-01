@@ -16,10 +16,10 @@ function slugify(raw: string) {
 
 export function useProductSubmit() {
     const navigate = useNavigate()
-    const { createProduct, updateProduct } = useProducts()
+    const { createProduct, updateProduct, getProductVariants, createVariant, updateVariant, deleteVariant } = useProducts()
     const [saving, setSaving] = useState(false)
 
-    const validateForm = (formData: any, variantForm: any, isEditing: boolean) => {
+    const validateForm = (formData: any, variantsData: any, isEditing: boolean) => {
         if (!isEditing) {
             if (!formData.name.trim() || !formData.slug.trim()) {
                 toast.error('Nombre y Slug son obligatorios');
@@ -29,9 +29,15 @@ export function useProductSubmit() {
                 toast.error('Selecciona una categoría');
                 return false
             }
-            if (!variantForm.sku.trim() || !variantForm.label.trim() || !variantForm.price_cents) {
-                toast.error('Completa SKU, Label y Precio de la variante');
+            if (!variantsData.variants || variantsData.variants.length === 0) {
+                toast.error('Debe agregar al menos una variante');
                 return false
+            }
+            for (const variant of variantsData.variants) {
+                if (!variant.sku.trim() || !variant.label.trim() || !variant.price_cents) {
+                    toast.error('Completa SKU, Label y Precio de todas las variantes');
+                    return false
+                }
             }
         }
         return true
@@ -53,48 +59,151 @@ export function useProductSubmit() {
     const submitForm = async (
         formData: any,
         nutritionFacts: any,
-        variantForm: any,
+        variantsData: any,
         productFiles: File[],
         productAlts: string[],
         isEditing: boolean,
-        productId?: string
+        productId?: string,
+        changeDetection?: {
+            hasProductChanges: () => boolean,
+            hasNutritionChanges: () => boolean,
+            hasVariantsChanges: () => boolean,
+            getChangedVariants: () => Array<{ index: number; variant: any; action: 'create' | 'update' | 'delete' }>,
+            originalFormData: any,
+            originalVariantsData: any
+        }
     ) => {
-        if (!validateForm(formData, variantForm, isEditing)) return
+        if (!validateForm(formData, variantsData, isEditing)) return
 
         setSaving(true)
         try {
-            // Upload product images
-            const uploadedProductImages = await handleImageUpload(
-                productFiles,
-                isEditing && productId ? `products/${productId}` : `products/temp-${crypto.randomUUID()}`,
-                productAlts
-            )
+            if (isEditing && productId && changeDetection) {
+                // Optimized update logic - only update what changed
+                let hasAnyChanges = false
 
-            const cleanedNutritionFacts = cleanNutritionFacts(nutritionFacts)
+                // Check if product data changed
+                if (changeDetection.hasProductChanges()) {
+                    const uploadedProductImages = await handleImageUpload(
+                        productFiles,
+                        `products/${productId}`,
+                        productAlts
+                    )
 
-            if (isEditing && productId) {
-                const payload = {
-                    name: formData.name.trim(),
-                    slug: slugify(formData.slug.trim()),
-                    description: formData.description,
-                    long_description: formData.long_description,
-                    is_featured: formData.is_featured,
-                    is_active: formData.is_active,
-                    images: uploadedProductImages.length ? uploadedProductImages : formData.images,
-                    features: formData.features,
-                    ingredients: formData.ingredients,
-                    category_id: formData.category_id || null,
-                    nutrition_facts: cleanedNutritionFacts
+                    const payload = {
+                        name: formData.name.trim(),
+                        slug: slugify(formData.slug.trim()),
+                        description: formData.description,
+                        long_description: formData.long_description,
+                        is_featured: formData.is_featured,
+                        is_active: formData.is_active,
+                        images: uploadedProductImages.length ? uploadedProductImages : formData.images,
+                        features: formData.features,
+                        ingredients: formData.ingredients,
+                        category_id: formData.category_id || null,
+                        nutrition_facts: changeDetection.hasNutritionChanges() ? cleanNutritionFacts(nutritionFacts) : undefined
+                    }
+                    await updateProduct(productId, payload as any)
+                    hasAnyChanges = true
+                } else if (changeDetection.hasNutritionChanges()) {
+                    // Only update nutrition facts if product data didn't change
+                    const payload = { nutrition_facts: cleanNutritionFacts(nutritionFacts) }
+                    await updateProduct(productId, payload as any)
+                    hasAnyChanges = true
                 }
-                await updateProduct(productId, payload as any)
-                toast.success('Producto actualizado')
+
+                // Handle variants changes
+                if (changeDetection.hasVariantsChanges()) {
+                    const changedVariants = changeDetection.getChangedVariants()
+                    const existingVariants = await getProductVariants(productId)
+                    const existingVariantIds = existingVariants.map((v: any) => v.id)
+
+                    for (const change of changedVariants) {
+                        if (change.action === 'create') {
+                            // Upload variant images if any
+                            const variantImages = await handleImageUpload(
+                                change.variant.files,
+                                `variants/${productId}`,
+                                change.variant.alts
+                            )
+
+                            const variantPayload = {
+                                sku: change.variant.sku.trim(),
+                                label: change.variant.label.trim(),
+                                flavor: change.variant.flavor.trim() || undefined,
+                                size: change.variant.size.trim() || undefined,
+                                price_cents: parseInt(change.variant.price_cents || '0', 10),
+                                compare_at_price_cents: change.variant.compare_at_price_cents ? parseInt(change.variant.compare_at_price_cents, 10) : undefined,
+                                in_stock: parseInt(change.variant.in_stock || '0', 10),
+                                low_stock_threshold: parseInt(change.variant.low_stock_threshold || '5', 10),
+                                is_default: change.variant.is_default,
+                                images: variantImages
+                            }
+                            await createVariant(productId, variantPayload)
+                        } else if (change.action === 'update') {
+                            // Upload variant images if any
+                            const variantImages = await handleImageUpload(
+                                change.variant.files,
+                                `variants/${productId}`,
+                                change.variant.alts
+                            )
+
+                            const variantPayload = {
+                                sku: change.variant.sku.trim(),
+                                label: change.variant.label.trim(),
+                                flavor: change.variant.flavor.trim() || undefined,
+                                size: change.variant.size.trim() || undefined,
+                                price_cents: parseInt(change.variant.price_cents || '0', 10),
+                                compare_at_price_cents: change.variant.compare_at_price_cents ? parseInt(change.variant.compare_at_price_cents, 10) : undefined,
+                                in_stock: parseInt(change.variant.in_stock || '0', 10),
+                                low_stock_threshold: parseInt(change.variant.low_stock_threshold || '5', 10),
+                                is_default: change.variant.is_default,
+                                ...(variantImages.length > 0 ? { images: variantImages } : {})
+                            }
+                            await updateVariant(existingVariantIds[change.index], variantPayload)
+                        } else if (change.action === 'delete') {
+                            await deleteVariant(existingVariantIds[change.index])
+                        }
+                    }
+                    hasAnyChanges = true
+                }
+
+                if (hasAnyChanges) {
+                    toast.success('Producto actualizado')
+                } else {
+                    toast.success('No hay cambios para guardar')
+                }
             } else {
-                // Upload variant images
-                const firstVariantImages = await handleImageUpload(
-                    variantForm.files,
-                    `variants/temp-${crypto.randomUUID()}`,
-                    variantForm.alts
+                // Upload product images
+                const uploadedProductImages = await handleImageUpload(
+                    productFiles,
+                    `products/temp-${crypto.randomUUID()}`,
+                    productAlts
                 )
+
+                // Upload variant images for all variants
+                const variantsWithImages = await Promise.all(
+                    variantsData.variants.map(async (variant: any) => {
+                        const variantImages = await handleImageUpload(
+                            variant.files,
+                            `variants/temp-${crypto.randomUUID()}`,
+                            variant.alts
+                        )
+                        return {
+                            sku: variant.sku.trim(),
+                            label: variant.label.trim(),
+                            flavor: variant.flavor.trim() || undefined,
+                            size: variant.size.trim() || undefined,
+                            price_cents: parseInt(variant.price_cents || '0', 10),
+                            compare_at_price_cents: variant.compare_at_price_cents ? parseInt(variant.compare_at_price_cents, 10) : undefined,
+                            in_stock: parseInt(variant.in_stock || '0', 10),
+                            low_stock_threshold: parseInt(variant.low_stock_threshold || '5', 10),
+                            is_default: variant.is_default,
+                            images: variantImages
+                        }
+                    })
+                )
+
+                const cleanedNutritionFacts = cleanNutritionFacts(nutritionFacts)
 
                 const productPayload = {
                     name: formData.name.trim(),
@@ -110,20 +219,7 @@ export function useProductSubmit() {
                     nutrition_facts: cleanedNutritionFacts
                 }
 
-                const variantPayload = {
-                    sku: variantForm.sku.trim(),
-                    label: variantForm.label.trim(),
-                    flavor: variantForm.flavor.trim() || undefined,
-                    size: variantForm.size.trim() || undefined,
-                    price_cents: parseInt(variantForm.price_cents || '0', 10),
-                    compare_at_price_cents: variantForm.compare_at_price_cents ? parseInt(variantForm.compare_at_price_cents, 10) : undefined,
-                    in_stock: parseInt(variantForm.in_stock || '0', 10),
-                    low_stock_threshold: parseInt(variantForm.low_stock_threshold || '5', 10),
-                    is_default: variantForm.is_default,
-                    images: firstVariantImages
-                }
-
-                const res = await createProduct(productPayload as any, variantPayload as any)
+                const res = await createProduct(productPayload as any, variantsWithImages as any)
                 toast.success('Producto creado')
                 const newProductId = (res as any)?.product_id
                 if (newProductId) navigate(`/products/${newProductId}/edit`)
