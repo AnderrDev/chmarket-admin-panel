@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, Tag, Save, X } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryForm } from '@/components/CategoryForm';
 import { formatDate } from '@/utils/format';
-import type { Category, CategoryFormData } from '@/types';
+import type { Category, CategoryFormData } from '@/data/entities/category';
 
 export default function Categories() {
   const {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DiscountCode } from '@/types/index.ts';
+import { DiscountCode } from '@/data/entities/discount';
 import toast from 'react-hot-toast';
 
 const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL;
