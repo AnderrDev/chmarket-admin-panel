@@ -7,6 +7,10 @@ import { SupabaseCategoryDataSource } from '@/data/datasources/CategoryDataSourc
 import { CategoryRepositoryImpl } from '@/data/repositories/CategoryRepositoryImpl';
 import { SupabaseAuthDataSource } from '@/data/datasources/AuthDataSource';
 import { AuthRepositoryImpl } from '@/data/repositories/AuthRepositoryImpl';
+import { SupabaseDiscountDataSource } from '@/data/datasources/DiscountDataSource';
+import { DiscountRepositoryImpl } from '@/data/repositories/DiscountRepositoryImpl';
+import { SupabaseOrderDataSource } from '@/data/datasources/OrderDataSource';
+import { OrderRepositoryImpl } from '@/data/repositories/OrderRepositoryImpl';
 import { ListProductsUseCase } from '@/domain/usecases/product/ListProducts';
 import { CreateProductUseCase } from '@/domain/usecases/product/CreateProduct';
 import { UpdateProductUseCase } from '@/domain/usecases/product/UpdateProduct';
@@ -24,6 +28,18 @@ import { ListCategoriesUseCase } from '@/domain/usecases/category/ListCategories
 import { CreateCategoryUseCase } from '@/domain/usecases/category/CreateCategory';
 import { UpdateCategoryUseCase } from '@/domain/usecases/category/UpdateCategory';
 import { DeleteCategoryUseCase } from '@/domain/usecases/category/DeleteCategory';
+import { ListDiscountsUseCase } from '@/domain/usecases/discount/ListDiscounts';
+import { CreateDiscountUseCase } from '@/domain/usecases/discount/CreateDiscount';
+import { UpdateDiscountUseCase } from '@/domain/usecases/discount/UpdateDiscount';
+import { DeleteDiscountUseCase } from '@/domain/usecases/discount/DeleteDiscount';
+import { ToggleDiscountStatusUseCase } from '@/domain/usecases/discount/ToggleDiscountStatus';
+import { GetActiveDiscountsUseCase } from '@/domain/usecases/discount/GetActiveDiscounts';
+import { ListOrdersUseCase } from '@/domain/usecases/order/ListOrders';
+import { GetOrderUseCase } from '@/domain/usecases/order/GetOrder';
+import { GetOrderItemsUseCase } from '@/domain/usecases/order/GetOrderItems';
+import { UpdateOrderStatusUseCase } from '@/domain/usecases/order/UpdateOrderStatus';
+import { GetOrdersByStatusUseCase } from '@/domain/usecases/order/GetOrdersByStatus';
+import { GetOrdersStatsUseCase } from '@/domain/usecases/order/GetOrdersStats';
 import { ProductViewModel } from '@/presentation/viewmodels/ProductViewModel';
 import { AuthViewModel } from '@/presentation/viewmodels/AuthViewModel';
 import { CategoryViewModel } from '@/presentation/viewmodels/CategoryViewModel';
@@ -41,6 +57,12 @@ const categoryRepository = new CategoryRepositoryImpl(categoryDataSource);
 
 const authDataSource = new SupabaseAuthDataSource();
 const authRepository = new AuthRepositoryImpl(authDataSource);
+
+const discountDataSource = new SupabaseDiscountDataSource();
+const discountRepository = new DiscountRepositoryImpl(discountDataSource);
+
+const orderDataSource = new SupabaseOrderDataSource();
+const orderRepository = new OrderRepositoryImpl(orderDataSource);
 
 // Domain Layer - Use Cases
 export const listProductsUseCase = new ListProductsUseCase(productRepository);
@@ -73,6 +95,36 @@ export const updateCategoryUseCase = new UpdateCategoryUseCase(
 export const deleteCategoryUseCase = new DeleteCategoryUseCase(
   categoryRepository
 );
+
+export const listDiscountsUseCase = new ListDiscountsUseCase(
+  discountRepository
+);
+export const createDiscountUseCase = new CreateDiscountUseCase(
+  discountRepository
+);
+export const updateDiscountUseCase = new UpdateDiscountUseCase(
+  discountRepository
+);
+export const deleteDiscountUseCase = new DeleteDiscountUseCase(
+  discountRepository
+);
+export const toggleDiscountStatusUseCase = new ToggleDiscountStatusUseCase(
+  discountRepository
+);
+export const getActiveDiscountsUseCase = new GetActiveDiscountsUseCase(
+  discountRepository
+);
+
+export const listOrdersUseCase = new ListOrdersUseCase(orderRepository);
+export const getOrderUseCase = new GetOrderUseCase(orderRepository);
+export const getOrderItemsUseCase = new GetOrderItemsUseCase(orderRepository);
+export const updateOrderStatusUseCase = new UpdateOrderStatusUseCase(
+  orderRepository
+);
+export const getOrdersByStatusUseCase = new GetOrdersByStatusUseCase(
+  orderRepository
+);
+export const getOrdersStatsUseCase = new GetOrdersStatsUseCase(orderRepository);
 
 // Presentation Layer
 export const productViewModel = new ProductViewModel(

@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DiscountCode } from '@/data/entities/discount';
 import toast from 'react-hot-toast';
-
-const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL;
+import {
+  listDiscountsUseCase,
+  createDiscountUseCase,
+  updateDiscountUseCase,
+  deleteDiscountUseCase,
+  toggleDiscountStatusUseCase,
+  getActiveDiscountsUseCase,
+} from '@/application/container';
 
 export function useDiscounts() {
   const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
@@ -12,27 +18,8 @@ export function useDiscounts() {
   const fetchDiscounts = useCallback(async () => {
     try {
       setLoading(true);
-
-      const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/admin-discounts/list`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Error al cargar cupones');
-      }
-
-      const { data, error: responseError } = await response.json();
-
-      if (responseError) throw new Error(responseError);
-
-      setDiscounts(data || []);
+      const data = await listDiscountsUseCase.execute();
+      setDiscounts(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar cupones');
       toast.error('Error al cargar cupones');
@@ -44,26 +31,7 @@ export function useDiscounts() {
   const createDiscount = useCallback(
     async (discountData: Partial<DiscountCode>) => {
       try {
-        const response = await fetch(
-          `${SUPABASE_URL}/functions/v1/admin-discounts/create`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify(discountData),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Error al crear cupón');
-        }
-
-        const { data, error: responseError } = await response.json();
-
-        if (responseError) throw new Error(responseError);
-
+        const data = await createDiscountUseCase.execute(discountData as any);
         setDiscounts(prev => [data, ...prev]);
         return data;
       } catch (err) {
@@ -77,26 +45,10 @@ export function useDiscounts() {
   const updateDiscount = useCallback(
     async (id: string, discountData: Partial<DiscountCode>) => {
       try {
-        const response = await fetch(
-          `${SUPABASE_URL}/functions/v1/admin-discounts`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({ discountId: id, discountData }),
-          }
+        const data = await updateDiscountUseCase.execute(
+          id,
+          discountData as any
         );
-
-        if (!response.ok) {
-          throw new Error('Error al actualizar cupón');
-        }
-
-        const { data, error: responseError } = await response.json();
-
-        if (responseError) throw new Error(responseError);
-
         setDiscounts(prev => prev.map(d => (d.id === id ? data : d)));
         return data;
       } catch (err) {
@@ -109,26 +61,7 @@ export function useDiscounts() {
 
   const deleteDiscount = useCallback(async (id: string) => {
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/admin-discounts`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ discountId: id }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar cupón');
-      }
-
-      const { error: responseError } = await response.json();
-
-      if (responseError) throw new Error(responseError);
-
+      await deleteDiscountUseCase.execute(id);
       setDiscounts(prev => prev.filter(d => d.id !== id));
       toast.success('Cupón eliminado exitosamente');
     } catch (err) {
@@ -140,26 +73,7 @@ export function useDiscounts() {
   const toggleDiscountStatus = useCallback(
     async (id: string, isActive: boolean) => {
       try {
-        const response = await fetch(
-          `${SUPABASE_URL}/functions/v1/admin-discounts/toggle-status`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({ discountId: id, isActive }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Error al cambiar estado del cupón');
-        }
-
-        const { data, error: responseError } = await response.json();
-
-        if (responseError) throw new Error(responseError);
-
+        const data = await toggleDiscountStatusUseCase.execute(id, isActive);
         setDiscounts(prev => prev.map(d => (d.id === id ? data : d)));
         toast.success(
           `Cupón ${isActive ? 'activado' : 'desactivado'} exitosamente`
@@ -175,26 +89,7 @@ export function useDiscounts() {
 
   const getActiveDiscounts = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/admin-discounts/active`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Error al cargar cupones activos');
-      }
-
-      const { data, error: responseError } = await response.json();
-
-      if (responseError) throw new Error(responseError);
-
-      return data || [];
+      return await getActiveDiscountsUseCase.execute();
     } catch (err) {
       toast.error('Error al cargar cupones activos');
       throw err;
