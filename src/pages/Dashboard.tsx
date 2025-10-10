@@ -113,7 +113,7 @@ export default function Dashboard() {
     if (products.length > 0 && orders.length > 0) {
       loadStats();
     }
-  }, [products, orders, discounts, getOrdersStats]);
+  }, [products, orders, discounts]);
 
   const statCards = [
     {
