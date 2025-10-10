@@ -1,54 +1,71 @@
-import { useState } from 'react'
-import { Plus, Edit, Trash2, Tag, Save, X } from 'lucide-react'
-import { useCategories } from '@/hooks/useCategories'
-import { CategoryForm } from '@/components/CategoryForm'
-import { formatDate } from '@/utils/format'
-import type { Category, CategoryFormData } from '@/types'
+import { useState } from 'react';
+import { Plus, Edit, Trash2, Tag, Save, X } from 'lucide-react';
+import { useCategories } from '@/hooks/useCategories';
+import { CategoryForm } from '@/components/CategoryForm';
+import { formatDate } from '@/utils/format';
+import type { Category, CategoryFormData } from '@/types';
 
 export default function Categories() {
-  const { categories, loading, createCategory, updateCategory, deleteCategory } = useCategories()
-  const [showForm, setShowForm] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [formLoading, setFormLoading] = useState(false)
+  const {
+    categories,
+    loading,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+  } = useCategories();
+  const [showForm, setShowForm] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
 
   const handleFormSubmit = async (data: CategoryFormData) => {
-    setFormLoading(true)
+    setFormLoading(true);
     try {
       if (editingCategory) {
-        await updateCategory(editingCategory.id, data)
+        await updateCategory(editingCategory.id, data);
       } else {
-        await createCategory(data)
+        await createCategory(data);
       }
-      handleCloseForm()
+      handleCloseForm();
     } catch (error) {
-      console.error('Error submitting category form:', error)
-      alert(error instanceof Error ? error.message : 'Error al procesar la categoría')
+      console.error('Error submitting category form:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Error al procesar la categoría'
+      );
     } finally {
-      setFormLoading(false)
+      setFormLoading(false);
     }
-  }
+  };
 
   const handleCloseForm = () => {
-    setShowForm(false)
-    setEditingCategory(null)
-  }
+    setShowForm(false);
+    setEditingCategory(null);
+  };
 
   const handleEdit = (category: Category) => {
-    setEditingCategory(category)
-    setShowForm(true)
-  }
+    setEditingCategory(category);
+    setShowForm(true);
+  };
 
   const handleDelete = async (category: Category) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar la categoría "${category.name}"?`)) {
+    if (
+      window.confirm(
+        `¿Estás seguro de que quieres eliminar la categoría "${category.name}"?`
+      )
+    ) {
       try {
-        await deleteCategory(category.id)
+        await deleteCategory(category.id);
       } catch (error) {
-        console.error('Error deleting category:', error)
-        alert(error instanceof Error ? error.message : 'Error al eliminar la categoría')
+        console.error('Error deleting category:', error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : 'Error al eliminar la categoría'
+        );
       }
     }
-  }
-
+  };
 
   if (loading) {
     return (
@@ -67,7 +84,7 @@ export default function Categories() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -98,10 +115,9 @@ export default function Categories() {
               {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              {editingCategory 
+              {editingCategory
                 ? `Modifica los datos de "${editingCategory.name}"`
-                : 'Completa la información para crear una nueva categoría'
-              }
+                : 'Completa la información para crear una nueva categoría'}
             </p>
           </div>
           <div className="p-6">
@@ -116,61 +132,64 @@ export default function Categories() {
       )}
 
       {/* Lista de categorías */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="grid gap-6">
-            {categories.map((category) => (
-              <div key={category.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul className="divide-y divide-gray-200">
+          {categories.map(category => (
+            <li key={category.id}>
+              <div className="px-4 py-4 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-12 w-12">
                       <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                         <Tag className="h-6 w-6 text-white" />
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 truncate">
-                        {category.name}
-                      </h3>
-                      <div className="mt-2 flex items-center space-x-4">
-                        <span className="text-sm text-gray-500">
-                          Creado: {formatDate(category.created_at)}
-                        </span>
+                    <div className="ml-4">
+                      <div className="flex items-center">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {category.name}
+                        </p>
                         {category.product_count !== undefined && (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            {category.product_count} producto{category.product_count !== 1 ? 's' : ''}
+                          <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {category.product_count} producto
+                            {category.product_count !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
+                      <div className="mt-1 text-sm text-gray-500">
+                        Creado: {formatDate(category.created_at)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleEdit(category)}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="text-gray-400 hover:text-gray-600"
+                      title="Editar"
                     >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
+                      <Edit className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(category)}
-                      className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      className="text-gray-400 hover:text-red-500"
+                      title="Eliminar"
                     >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Eliminar
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {categories.length === 0 && !loading && (
         <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
           <Tag className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No hay categorías</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No hay categorías
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
             Comienza creando tu primera categoría de productos.
           </p>
@@ -183,5 +202,5 @@ export default function Categories() {
         </div>
       )}
     </div>
-  )
+  );
 }

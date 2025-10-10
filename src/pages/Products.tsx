@@ -1,10 +1,11 @@
 // src/pages/Products.tsx
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Edit, Trash2, Package, Search, Filter } from 'lucide-react'
-import { useProducts } from '@/hooks/useProducts'
-import { useCategories } from '@/hooks/useCategories'
-import { formatCurrency, formatDate, getStatusColor } from '@/utils/format'
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, Package, Search, Filter } from 'lucide-react';
+import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
+import { formatCurrency, formatDate, getStatusColor } from '@/utils/format';
+import toast from 'react-hot-toast';
 
 function ProductsSkeleton() {
   return (
@@ -22,60 +23,87 @@ function ProductsSkeleton() {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 export default function Products() {
-  const navigate = useNavigate()
-  const { products, loading, deleteProduct, fetchProducts } = useProducts()
-  const { categories, loading: categoriesLoading } = useCategories()
+  const navigate = useNavigate();
+  const { products, loading, deleteProduct, fetchProducts, updateProduct } =
+    useProducts();
+  const { categories, loading: categoriesLoading } = useCategories();
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterCategory, setFilterCategory] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<string>('created_at')
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('created_at');
 
   // Atajo teclado: "N" -> nuevo producto
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault()
-        navigate('/products/new')
+      if (
+        (e.key === 'n' || e.key === 'N') &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
+        e.preventDefault();
+        navigate('/products/new');
       }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [navigate])
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
 
-  useEffect(() => { fetchProducts() }, [fetchProducts])
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filtered = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase()
+    const term = searchTerm.trim().toLowerCase();
     return products
       .filter(p => {
         const matchesSearch =
           !term ||
           p.name.toLowerCase().includes(term) ||
-          p.slug.toLowerCase().includes(term)
+          p.slug.toLowerCase().includes(term);
         const matchesCategory =
-          filterCategory === 'all' || p.category_name === filterCategory
-        return matchesSearch && matchesCategory
+          filterCategory === 'all' || p.category_name === filterCategory;
+        return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {
         switch (sortBy) {
           case 'name':
-            return a.name.localeCompare(b.name)
+            return a.name.localeCompare(b.name);
           case 'created_at':
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            return (
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+            );
           default:
-            return 0
+            return 0;
         }
-      })
-  }, [products, searchTerm, filterCategory, sortBy])
+      });
+  }, [products, searchTerm, filterCategory, sortBy]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este producto?')) return
-    try { await deleteProduct(id) } catch (e) { console.error(e) }
-  }
+    if (!confirm('¿Eliminar este producto?')) return;
+    try {
+      await deleteProduct(id);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      await updateProduct(id, { is_active: !currentStatus });
+      toast.success(
+        `Producto ${!currentStatus ? 'activado' : 'desactivado'} exitosamente`
+      );
+    } catch (error) {
+      console.error('Error updating product status:', error);
+      toast.error('Error al cambiar el estado del producto');
+    }
+  };
 
   return (
     <div className="relative">
@@ -112,7 +140,7 @@ export default function Products() {
                 type="text"
                 placeholder="Nombre o slug…"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="input-field pl-9"
               />
             </div>
@@ -125,14 +153,18 @@ export default function Products() {
               <Filter className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
               <select
                 value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
+                onChange={e => setFilterCategory(e.target.value)}
                 className="input-field pl-9"
               >
                 <option value="all">Todas</option>
                 {categoriesLoading ? (
                   <option disabled>Cargando…</option>
                 ) : (
-                  categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)
+                  categories.map(c => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))
                 )}
               </select>
             </div>
@@ -143,7 +175,7 @@ export default function Products() {
             </label>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={e => setSortBy(e.target.value)}
               className="input-field"
             >
               <option value="created_at">Más recientes</option>
@@ -160,7 +192,9 @@ export default function Products() {
         <div className="text-center py-16 bg-white shadow rounded-lg">
           <Package className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">
-            {searchTerm || filterCategory !== 'all' ? 'Sin resultados' : 'No hay productos'}
+            {searchTerm || filterCategory !== 'all'
+              ? 'Sin resultados'
+              : 'No hay productos'}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
             {searchTerm || filterCategory !== 'all'
@@ -168,7 +202,10 @@ export default function Products() {
               : 'Crea tu primer producto para empezar.'}
           </p>
           <div className="mt-6">
-            <Link to="/products/new" className="btn-primary inline-flex items-center">
+            <Link
+              to="/products/new"
+              className="btn-primary inline-flex items-center"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Crear Producto
             </Link>
@@ -177,13 +214,13 @@ export default function Products() {
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul className="divide-y divide-gray-200">
-            {filtered.map((product) => {
+            {filtered.map(product => {
               const image =
                 Array.isArray(product.images) && product.images.length
-                  ? (typeof product.images[0] === 'string'
-                      ? product.images[0] as string
-                      : (product.images[0] as any).url)
-                  : null
+                  ? typeof product.images[0] === 'string'
+                    ? (product.images[0] as string)
+                    : (product.images[0] as any).url
+                  : null;
 
               return (
                 <li key={product.id}>
@@ -209,9 +246,9 @@ export default function Products() {
                               {product.name}
                             </p>
                             <span
-                              className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                getStatusColor(product.is_active ? 'active' : 'inactive')
-                              }`}
+                              className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                product.is_active ? 'active' : 'inactive'
+                              )}`}
                             >
                               {product.is_active ? 'Activo' : 'Inactivo'}
                             </span>
@@ -224,11 +261,18 @@ export default function Products() {
                           <div className="mt-1 flex flex-wrap items-center text-sm text-gray-500 gap-x-2">
                             <span className="truncate">{product.slug}</span>
                             <span className="hidden sm:inline">•</span>
-                            <span>{product.category_name || 'Sin categoría'}</span>
+                            <span>
+                              {product.category_name || 'Sin categoría'}
+                            </span>
                             <span className="hidden sm:inline">•</span>
                             {/* Si tu backend expone default_price_cents, muestralo. Si no, puedes quitar esta parte. */}
-                            {typeof (product as any).default_price_cents === 'number' && (
-                              <span>{formatCurrency((product as any).default_price_cents)}</span>
+                            {typeof (product as any).default_price_cents ===
+                              'number' && (
+                              <span>
+                                {formatCurrency(
+                                  (product as any).default_price_cents
+                                )}
+                              </span>
                             )}
                           </div>
                           <div className="mt-1 text-sm text-gray-500">
@@ -236,26 +280,49 @@ export default function Products() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Link
-                          to={`/products/${product.id}/edit`}
-                          className="text-gray-400 hover:text-gray-600"
-                          title="Editar"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="text-gray-400 hover:text-red-500"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                      <div className="flex items-center space-x-3">
+                        {/* Switch para activar/desactivar */}
+                        <div className="flex items-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={product.is_active}
+                              onChange={() =>
+                                handleToggleStatus(
+                                  product.id,
+                                  product.is_active
+                                )
+                              }
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span className="ml-2 text-sm font-medium text-gray-700">
+                              {product.is_active ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Link
+                            to={`/products/${product.id}/edit`}
+                            className="text-gray-400 hover:text-gray-600"
+                            title="Editar"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="text-gray-400 hover:text-red-500"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </li>
-              )
+              );
             })}
           </ul>
         </div>
@@ -270,5 +337,5 @@ export default function Products() {
         <Plus className="w-6 h-6" />
       </Link>
     </div>
-  )
+  );
 }
