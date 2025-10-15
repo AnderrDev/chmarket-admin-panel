@@ -42,6 +42,7 @@ export class SupabaseProductDataSource implements ProductDataSource {
       ...p,
       category_id: p.category?.id || p.category_id || null,
       category_name: p.category?.name || p.category_name || null,
+      store: p.store || '', // Include store field without forcing default
       category: undefined, // evitamos duplicados en el objeto
     }));
   }

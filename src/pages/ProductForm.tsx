@@ -1,18 +1,17 @@
 // src/pages/ProductForm.tsx
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, Package } from 'lucide-react'
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Save, Package, TestTube } from 'lucide-react';
 
-import { useCategories } from '@/hooks/useCategories'
-import { useProductForm } from '@/hooks/useProductForm'
-import { useFileHandling } from '@/hooks/useFileHandling'
-import { useFormHandlers } from '@/hooks/useFormHandlers'
-import { useProductSubmit } from '@/hooks/useProductSubmit'
-import BasicProductInfo from '@/components/product-form/BasicProductInfo'
-import FeaturesAndIngredients from '@/components/product-form/FeaturesAndIngredients'
-import ImageUpload from '@/components/product-form/ImageUpload'
-import NutritionFacts from '@/components/product-form/NutritionFacts'
-import MultipleVariantsForm from '@/components/product-form/MultipleVariantsForm'
-
+import { useCategories } from '@/hooks/useCategories';
+import { useProductForm } from '@/hooks/useProductForm';
+import { useFileHandling } from '@/hooks/useFileHandling';
+import { useFormHandlers } from '@/hooks/useFormHandlers';
+import { useProductSubmit } from '@/hooks/useProductSubmit';
+import BasicProductInfo from '@/components/product-form/BasicProductInfo';
+import FeaturesAndIngredients from '@/components/product-form/FeaturesAndIngredients';
+import ImageUpload from '@/components/product-form/ImageUpload';
+import NutritionFacts from '@/components/product-form/NutritionFacts';
+import MultipleVariantsForm from '@/components/product-form/MultipleVariantsForm';
 
 function ProductSkeleton() {
   return (
@@ -40,13 +39,12 @@ function ProductSkeleton() {
         <div className="h-10 w-36 bg-gray-200 rounded" />
       </div>
     </div>
-  )
+  );
 }
 
-
 export default function ProductForm() {
-  const navigate = useNavigate()
-  const { categories, loading: categoriesLoading } = useCategories()
+  const navigate = useNavigate();
+  const { categories, loading: categoriesLoading } = useCategories();
 
   // Custom hooks
   const {
@@ -74,30 +72,37 @@ export default function ProductForm() {
     getChangedVariants,
     originalFormData,
     originalVariantsData,
-  } = useProductForm()
+    fillWithTestData,
+  } = useProductForm();
 
   const {
     productFiles,
     handleProductFiles,
     handleMultipleVariantFiles,
-    resetProductFiles
-  } = useFileHandling()
+    resetProductFiles,
+  } = useFileHandling();
 
-  const { handleProductChange } = useFormHandlers()
-  const { saving, submitForm } = useProductSubmit()
+  const { handleProductChange } = useFormHandlers();
+  const { saving, submitForm } = useProductSubmit();
 
   // Event handlers
-  const onProductChangeHandler = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    handleProductChange(e, formData, setFormData, touchedSlug, setTouchedSlug)
-  }
+  const onProductChangeHandler = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    handleProductChange(e, formData, setFormData, touchedSlug, setTouchedSlug);
+  };
 
-  const onVariantFiles = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    handleMultipleVariantFiles(variantIndex, e, setVariantsData)
-  }
-
+  const onVariantFiles = (
+    variantIndex: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    handleMultipleVariantFiles(variantIndex, e, setVariantsData);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     const success = await submitForm(
       formData,
       nutritionFacts,
@@ -105,39 +110,58 @@ export default function ProductForm() {
       productFiles,
       isEditing,
       isEditing ? formData.id : undefined,
-      isEditing ? {
-        hasProductChanges,
-        hasNutritionChanges,
-        hasVariantsChanges,
-        getChangedVariants,
-        originalFormData,
-        originalVariantsData
-      } : undefined,
+      isEditing
+        ? {
+            hasProductChanges,
+            hasNutritionChanges,
+            hasVariantsChanges,
+            getChangedVariants,
+            originalFormData,
+            originalVariantsData,
+          }
+        : undefined,
       setFormData
-    )
+    );
 
     // Clear files after successful save
     if (success) {
-      resetProductFiles()
+      resetProductFiles();
     }
-  }
+  };
 
-  if (loading && isEditing) return <ProductSkeleton />
+  if (loading && isEditing) return <ProductSkeleton />;
   return (
     <div>
       <div className="mb-8">
-        <div className="flex items-center space-x-4">
-          <button onClick={() => navigate('/products')} className="text-gray-400 hover:text-gray-600">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isEditing ? 'Editar Producto' : 'Nuevo Producto'}
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {isEditing ? 'Modifica la información del producto' : 'Crea un nuevo producto con su primera variante'}
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate('/products')}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {isEditing ? 'Editar Producto' : 'Nuevo Producto'}
+              </h1>
+              <p className="mt-1 text-sm text-gray-500">
+                {isEditing
+                  ? 'Modifica la información del producto'
+                  : 'Crea un nuevo producto con su primera variante'}
+              </p>
+            </div>
           </div>
+          {!isEditing && (
+            <button
+              onClick={fillWithTestData}
+              className="btn-secondary inline-flex items-center text-sm"
+              type="button"
+            >
+              <TestTube className="w-4 h-4 mr-2" />
+              Rellenar con datos de prueba
+            </button>
+          )}
         </div>
       </div>
 
@@ -160,8 +184,12 @@ export default function ProductForm() {
             ingredientsInput={ingredientsInput}
             setFeaturesInput={setFeaturesInput}
             setIngredientsInput={setIngredientsInput}
-            onFeaturesChange={(features) => setFormData(prev => ({ ...prev, features }))}
-            onIngredientsChange={(ingredients) => setFormData(prev => ({ ...prev, ingredients }))}
+            onFeaturesChange={features =>
+              setFormData(prev => ({ ...prev, features }))
+            }
+            onIngredientsChange={ingredients =>
+              setFormData(prev => ({ ...prev, ingredients }))
+            }
           />
 
           {/* Imágenes */}
@@ -171,10 +199,10 @@ export default function ProductForm() {
             isEditing={isEditing}
             productId={formData.id}
             onProductFiles={handleProductFiles}
-            onRemoveExistingImage={(index) => {
-              const next = [...formData.images]
-              next.splice(index, 1)
-              setFormData(prev => ({ ...prev, images: next }))
+            onRemoveExistingImage={index => {
+              const next = [...formData.images];
+              next.splice(index, 1);
+              setFormData(prev => ({ ...prev, images: next }));
             }}
             onUpdateProduct={async () => {
               // This will be handled by the submit function
@@ -196,18 +224,37 @@ export default function ProductForm() {
           onUpdateVariant={updateVariant}
           onSetVariantAsDefault={setVariantAsDefault}
           onVariantFiles={onVariantFiles}
-          onVariantAlt={() => { }}
+          onVariantAlt={() => {}}
           isEditing={isEditing}
         />
 
         <div className="flex justify-end space-x-4">
-          <button type="button" onClick={() => navigate('/products')} className="btn-secondary">Cancelar</button>
-          <button type="submit" disabled={saving} className="btn-primary inline-flex items-center">
-            {saving ? (<><Package className="w-4 h-4 mr-2 animate-spin" />Guardando…</>) : (<><Save className="w-4 h-4 mr-2" />{isEditing ? 'Actualizar' : 'Crear'} Producto</>)}
+          <button
+            type="button"
+            onClick={() => navigate('/products')}
+            className="btn-secondary"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary inline-flex items-center"
+          >
+            {saving ? (
+              <>
+                <Package className="w-4 h-4 mr-2 animate-spin" />
+                Guardando…
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isEditing ? 'Actualizar' : 'Crear'} Producto
+              </>
+            )}
           </button>
         </div>
       </form>
-
     </div>
-  )
+  );
 }

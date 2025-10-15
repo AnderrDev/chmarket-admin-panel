@@ -21,6 +21,7 @@ export interface Product {
 
   category_id: string | null;
   category_name?: string;
+  store?: string;
 
   default_variant_id?: string;
   default_price_cents?: number;

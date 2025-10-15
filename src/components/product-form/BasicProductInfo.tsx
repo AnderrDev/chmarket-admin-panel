@@ -11,6 +11,7 @@ interface BasicProductInfoProps {
     long_description: string;
     is_featured: boolean;
     is_active: boolean;
+    store: string;
   };
   categories: Category[];
   categoriesLoading: boolean;
@@ -98,6 +99,20 @@ export default function BasicProductInfo({
                 {c.name}
               </option>
             ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Tienda *</label>
+          <select
+            name="store"
+            required
+            value={formData.store}
+            onChange={onProductChange}
+            className="input-field"
+          >
+            <option value="">Selecciona una tienda...</option>
+            <option value="CH+">CH+</option>
+            <option value="MoveOn">MoveOn</option>
           </select>
         </div>
         <div className="flex items-center space-x-6">
