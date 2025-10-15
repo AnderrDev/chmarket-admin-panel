@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Tag } from 'lucide-react';
 import { useDiscounts } from '@/hooks/useDiscounts.ts';
 import { DiscountCode } from '@/types/index.ts';
+import { formatPriceInput, parsePriceInput } from '@/utils/format';
 import toast from 'react-hot-toast';
 
 export default function DiscountForm() {
@@ -138,6 +139,38 @@ export default function DiscountForm() {
     }));
   };
 
+  const handlePriceChange = (
+    field: 'value_cents' | 'min_order_cents',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const formattedValue = e.target.value;
+    const centsValue = parsePriceInput(formattedValue);
+    setFormData(prev => ({
+      ...prev,
+      [field]: centsValue,
+    }));
+  };
+
+  const handlePriceFocus = (
+    field: 'value_cents' | 'min_order_cents',
+    e: React.FocusEvent<HTMLInputElement>
+  ) => {
+    // No hacer nada en el focus, solo formatear en el blur
+    // Esto evita que se borre el valor al seleccionar el input
+  };
+
+  const handlePriceBlur = (
+    field: 'value_cents' | 'min_order_cents',
+    e: React.FocusEvent<HTMLInputElement>
+  ) => {
+    const formattedValue = e.target.value;
+    const centsValue = parsePriceInput(formattedValue);
+    setFormData(prev => ({
+      ...prev,
+      [field]: centsValue,
+    }));
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -237,18 +270,19 @@ export default function DiscountForm() {
                   htmlFor="value_cents"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Monto de Descuento (centavos) *
+                  Monto de Descuento *
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   id="value_cents"
                   name="value_cents"
                   required
-                  min="1"
-                  value={formData.value_cents}
-                  onChange={handleInputChange}
+                  value={formatPriceInput(formData.value_cents)}
+                  onChange={e => handlePriceChange('value_cents', e)}
+                  onFocus={e => handlePriceFocus('value_cents', e)}
+                  onBlur={e => handlePriceBlur('value_cents', e)}
                   className="input-field"
-                  placeholder="5000"
+                  placeholder="$50.000"
                 />
               </div>
             )}
@@ -258,18 +292,19 @@ export default function DiscountForm() {
                 htmlFor="min_order_cents"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Orden Mínima (centavos) *
+                Orden Mínima *
               </label>
               <input
-                type="number"
+                type="text"
                 id="min_order_cents"
                 name="min_order_cents"
                 required
-                min="0"
-                value={formData.min_order_cents}
-                onChange={handleInputChange}
+                value={formatPriceInput(formData.min_order_cents)}
+                onChange={e => handlePriceChange('min_order_cents', e)}
+                onFocus={e => handlePriceFocus('min_order_cents', e)}
+                onBlur={e => handlePriceBlur('min_order_cents', e)}
                 className="input-field"
-                placeholder="50000"
+                placeholder="$500.000"
               />
             </div>
 

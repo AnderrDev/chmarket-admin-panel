@@ -80,6 +80,8 @@ export default function ProductForm() {
     handleProductFiles,
     handleMultipleVariantFiles,
     resetProductFiles,
+    removeNewVariantImage,
+    removeExistingVariantImage,
   } = useFileHandling();
 
   const { handleProductChange } = useFormHandlers();
@@ -99,6 +101,17 @@ export default function ProductForm() {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     handleMultipleVariantFiles(variantIndex, e, setVariantsData);
+  };
+
+  const onRemoveNewVariantImage = (variantIndex: number, fileIndex: number) => {
+    removeNewVariantImage(variantIndex, fileIndex, setVariantsData);
+  };
+
+  const onRemoveExistingVariantImage = async (
+    variantIndex: number,
+    imageIndex: number
+  ) => {
+    await removeExistingVariantImage(variantIndex, imageIndex, setVariantsData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -175,7 +188,7 @@ export default function ProductForm() {
           setTouchedSlug={setTouchedSlug}
         />
 
-        {/* Features e ingredientes */}
+        {/* Características e ingredientes */}
         <div className="bg-white shadow rounded-lg p-6">
           <FeaturesAndIngredients
             features={formData.features}
@@ -225,6 +238,8 @@ export default function ProductForm() {
           onSetVariantAsDefault={setVariantAsDefault}
           onVariantFiles={onVariantFiles}
           onVariantAlt={() => {}}
+          onRemoveNewVariantImage={onRemoveNewVariantImage}
+          onRemoveExistingVariantImage={onRemoveExistingVariantImage}
           isEditing={isEditing}
         />
 

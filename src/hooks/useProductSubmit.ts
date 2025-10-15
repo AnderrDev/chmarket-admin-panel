@@ -204,9 +204,9 @@ export function useProductSubmit() {
                 []
               );
 
-              // Get existing variant to preserve existing images
-              const existingVariant = existingVariants[change.index];
-              const existingImages = existingVariant?.images || [];
+              // Use the existingImages from the form data (after user deletions)
+              const remainingExistingImages =
+                change.variant.existingImages || [];
 
               const variantPayload = {
                 sku: change.variant.sku.trim(),
@@ -223,9 +223,7 @@ export function useProductSubmit() {
                   10
                 ),
                 is_default: change.variant.is_default,
-                ...(variantImages.length > 0
-                  ? { images: [...existingImages, ...variantImages] }
-                  : {}),
+                images: [...remainingExistingImages, ...variantImages],
               };
               await updateVariant(
                 existingVariantIds[change.index],
