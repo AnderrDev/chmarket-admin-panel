@@ -146,6 +146,7 @@ export function useProductForm() {
               );
 
               return {
+                id: variant.id, // Preserve the variant ID
                 sku: variant.sku || '',
                 label: variant.label || '',
                 flavor: variant.flavor || '',
@@ -252,6 +253,7 @@ export function useProductForm() {
     index: number;
     variant: any;
     action: 'create' | 'update' | 'delete';
+    variantId?: string;
   }> => {
     if (!originalVariantsData)
       return variantsData.variants.map((_, index) => ({
@@ -264,6 +266,7 @@ export function useProductForm() {
       index: number;
       variant: any;
       action: 'create' | 'update' | 'delete';
+      variantId?: string;
     }> = [];
 
     // Check for updates and new variants
@@ -272,7 +275,12 @@ export function useProductForm() {
       if (!originalVariant) {
         changes.push({ index, variant, action: 'create' as const });
       } else if (JSON.stringify(variant) !== JSON.stringify(originalVariant)) {
-        changes.push({ index, variant, action: 'update' as const });
+        changes.push({
+          index,
+          variant,
+          action: 'update' as const,
+          variantId: variant.id, // Use the variant ID from the current variant
+        });
       }
     });
 
@@ -287,6 +295,7 @@ export function useProductForm() {
           index: i,
           variant: originalVariantsData.variants[i],
           action: 'delete' as const,
+          variantId: originalVariantsData.variants[i].id, // Store the actual variant ID
         });
       }
     }

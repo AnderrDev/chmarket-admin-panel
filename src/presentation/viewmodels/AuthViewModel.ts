@@ -10,7 +10,7 @@ import type { AuthRepository } from '@/domain/repositories/auth/AuthRepository';
 export class AuthViewModel {
   private user: User | null = null;
   private session: Session | null = null;
-  private loading = false;
+  private loading = true; // Iniciar como true para verificar sesión
   private error: string | null = null;
   private listeners: (() => void)[] = [];
 
@@ -107,6 +107,7 @@ export class AuthViewModel {
     try {
       this.loading = true;
       this.error = null;
+      this.notifyListeners();
 
       this.session = await this.getSessionUseCase.execute();
       this.user = this.session?.user || null;
@@ -115,24 +116,40 @@ export class AuthViewModel {
       const message =
         err instanceof Error ? err.message : 'Error al verificar sesión';
       this.error = message;
-      this.notificationService.error(message);
+      // No mostrar error de notificación en la verificación inicial
+      console.log('Session check failed:', message);
     } finally {
       this.loading = false;
+      this.notifyListeners();
     }
   }
 
   // Inicializar listener de Supabase Auth
   initializeAuth(): () => void {
+    // Verificar sesión existente al inicializar
+    this.checkSession()
+      .then(() => {
+        console.log('Initial session check completed');
+      })
+      .catch(error => {
+        console.log('Initial session check failed:', error);
+        // Si falla la verificación inicial, no es un error crítico
+        this.loading = false;
+        this.notifyListeners();
+      });
+
     return this.authRepository.onAuthStateChange(async (event, session) => {
       console.log('Auth state change:', event, session?.user?.email);
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         this.session = session;
         this.user = session?.user || null;
+        this.loading = false;
         this.notifyListeners();
       } else if (event === 'SIGNED_OUT') {
         this.session = null;
         this.user = null;
+        this.loading = false;
         this.notifyListeners();
       }
     });

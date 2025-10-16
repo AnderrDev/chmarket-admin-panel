@@ -166,8 +166,6 @@ export function useProductSubmit() {
         // Handle variants changes
         if (changeDetection.hasVariantsChanges()) {
           const changedVariants = changeDetection.getChangedVariants();
-          const existingVariants = await getProductVariants(productId);
-          const existingVariantIds = existingVariants.map((v: any) => v.id);
 
           for (const change of changedVariants) {
             if (change.action === 'create') {
@@ -225,12 +223,9 @@ export function useProductSubmit() {
                 is_default: change.variant.is_default,
                 images: [...remainingExistingImages, ...variantImages],
               };
-              await updateVariant(
-                existingVariantIds[change.index],
-                variantPayload
-              );
+              await updateVariant(change.variantId!, variantPayload);
             } else if (change.action === 'delete') {
-              await deleteVariant(existingVariantIds[change.index]);
+              await deleteVariant(change.variantId!);
             }
           }
           hasAnyChanges = true;

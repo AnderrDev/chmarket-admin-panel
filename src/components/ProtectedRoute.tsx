@@ -1,13 +1,15 @@
-import { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
+
+  console.log('ProtectedRoute - loading:', loading, 'user:', user?.email);
 
   if (loading) {
     return (
@@ -17,12 +19,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           <p className="mt-4 text-gray-600">Cargando...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    console.log('ProtectedRoute - No user, redirecting to login');
+    return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>
+  console.log('ProtectedRoute - User authenticated, rendering children');
+  return <>{children}</>;
 }
