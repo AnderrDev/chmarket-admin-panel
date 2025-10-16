@@ -12,7 +12,7 @@ import {
 import { useProducts } from '@/hooks/useProducts.ts';
 import { useOrders } from '@/hooks/useOrders.ts';
 import { useDiscounts } from '@/hooks/useDiscounts.ts';
-import { formatCurrency } from '@/utils/format.ts';
+import { formatCurrency, getProductImage } from '@/utils/format.ts';
 import { DashboardStats } from '@/types/index.ts';
 
 export default function Dashboard() {
@@ -35,6 +35,9 @@ export default function Dashboard() {
       variants: Array<{ variant: any; stock: number; threshold: number }>;
     }>
   >([]);
+  const [productVariants, setProductVariants] = useState<Record<string, any[]>>(
+    {}
+  );
 
   useEffect(() => {
     const loadStats = async () => {
@@ -114,6 +117,32 @@ export default function Dashboard() {
       loadStats();
     }
   }, [products, orders, discounts]);
+
+  // Load variants for each product
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (products.length > 0) {
+        const variantsMap: Record<string, any[]> = {};
+
+        for (const product of products) {
+          try {
+            const variants = await getProductVariants(product.id);
+            variantsMap[product.id] = variants;
+          } catch (error) {
+            console.error(
+              `Error loading variants for product ${product.id}:`,
+              error
+            );
+            variantsMap[product.id] = [];
+          }
+        }
+
+        setProductVariants(variantsMap);
+      }
+    };
+
+    loadVariants();
+  }, [products, getProductVariants]);
 
   const statCards = [
     {
@@ -332,10 +361,8 @@ export default function Dashboard() {
             </div>
             <div className="space-y-4">
               {lowStockProductsList.map(({ product, variants }) => {
-                const imageUrl =
-                  typeof product.images?.[0] === 'string'
-                    ? product.images[0]
-                    : product.images?.[0]?.url;
+                const productVariantsData = productVariants[product.id] || [];
+                const imageUrl = getProductImage(product, productVariantsData);
 
                 return (
                   <div

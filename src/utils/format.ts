@@ -89,3 +89,44 @@ export const formatPriceForDisplay = (cents: string | number): string => {
 
   return formatCurrency(numCents);
 };
+
+// Helper function to get product image with fallback to default variant image
+export const getProductImage = (
+  product: any,
+  variants?: any[]
+): string | null => {
+  // First try to get the main product image
+  if (
+    product.images &&
+    Array.isArray(product.images) &&
+    product.images.length > 0
+  ) {
+    const mainImage = product.images[0];
+    return typeof mainImage === 'string' ? mainImage : mainImage.url;
+  }
+
+  // If no main product image, try to get the default variant image
+  if (variants && variants.length > 0) {
+    const defaultVariant = variants.find(v => v.is_default);
+    if (
+      defaultVariant &&
+      defaultVariant.images &&
+      Array.isArray(defaultVariant.images) &&
+      defaultVariant.images.length > 0
+    ) {
+      const variantImage = defaultVariant.images[0];
+      return typeof variantImage === 'string' ? variantImage : variantImage.url;
+    }
+
+    // If no default variant, try the first variant with images
+    const variantWithImages = variants.find(
+      v => v.images && Array.isArray(v.images) && v.images.length > 0
+    );
+    if (variantWithImages) {
+      const variantImage = variantWithImages.images[0];
+      return typeof variantImage === 'string' ? variantImage : variantImage.url;
+    }
+  }
+
+  return null;
+};

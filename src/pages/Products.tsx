@@ -4,7 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Package, Search, Filter } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
-import { formatCurrency, formatDate, getStatusColor } from '@/utils/format';
+import {
+  formatCurrency,
+  formatDate,
+  getStatusColor,
+  getProductImage,
+} from '@/utils/format';
 import toast from 'react-hot-toast';
 
 function ProductsSkeleton() {
@@ -28,13 +33,22 @@ function ProductsSkeleton() {
 
 export default function Products() {
   const navigate = useNavigate();
-  const { products, loading, deleteProduct, fetchProducts, updateProduct } =
-    useProducts();
+  const {
+    products,
+    loading,
+    deleteProduct,
+    fetchProducts,
+    updateProduct,
+    getProductVariants,
+  } = useProducts();
   const { categories, loading: categoriesLoading } = useCategories();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('created_at');
+  const [productVariants, setProductVariants] = useState<Record<string, any[]>>(
+    {}
+  );
 
   // Atajo teclado: "N" -> nuevo producto
   useEffect(() => {
@@ -56,6 +70,32 @@ export default function Products() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Load variants for each product
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (products.length > 0) {
+        const variantsMap: Record<string, any[]> = {};
+
+        for (const product of products) {
+          try {
+            const variants = await getProductVariants(product.id);
+            variantsMap[product.id] = variants;
+          } catch (error) {
+            console.error(
+              `Error loading variants for product ${product.id}:`,
+              error
+            );
+            variantsMap[product.id] = [];
+          }
+        }
+
+        setProductVariants(variantsMap);
+      }
+    };
+
+    loadVariants();
+  }, [products, getProductVariants]);
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -215,12 +255,8 @@ export default function Products() {
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul className="divide-y divide-gray-200">
             {filtered.map(product => {
-              const image =
-                Array.isArray(product.images) && product.images.length
-                  ? typeof product.images[0] === 'string'
-                    ? (product.images[0] as string)
-                    : (product.images[0] as any).url
-                  : null;
+              const variants = productVariants[product.id] || [];
+              const image = getProductImage(product, variants);
 
               return (
                 <li key={product.id}>
