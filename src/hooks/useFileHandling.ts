@@ -92,6 +92,41 @@ export function useFileHandling() {
     });
   };
 
+  // Reorder product images (new files)
+  const reorderProductImages = (reorderedFiles: File[]) => {
+    setProductFiles(reorderedFiles);
+  };
+
+  // Reorder variant images (new files)
+  const reorderVariantImages = (
+    variantIndex: number,
+    reorderedFiles: File[],
+    setVariantsData: any
+  ) => {
+    setVariantsData((prev: any) => ({
+      variants: prev.variants.map((variant: any, i: number) =>
+        i === variantIndex
+          ? { ...variant, files: reorderedFiles }
+          : variant
+      ),
+    }));
+  };
+
+  // Reorder existing variant images
+  const reorderExistingVariantImages = (
+    variantIndex: number,
+    reorderedImages: any[],
+    setVariantsData: any
+  ) => {
+    setVariantsData((prev: any) => ({
+      variants: prev.variants.map((variant: any, i: number) =>
+        i === variantIndex
+          ? { ...variant, existingImages: reorderedImages }
+          : variant
+      ),
+    }));
+  };
+
   return {
     productFiles,
     handleProductFiles,
@@ -100,5 +135,8 @@ export function useFileHandling() {
     resetProductFiles,
     removeNewVariantImage,
     removeExistingVariantImage,
+    reorderProductImages,
+    reorderVariantImages,
+    reorderExistingVariantImages,
   };
 }

@@ -82,6 +82,9 @@ export default function ProductForm() {
     resetProductFiles,
     removeNewVariantImage,
     removeExistingVariantImage,
+    reorderProductImages,
+    reorderVariantImages,
+    reorderExistingVariantImages,
   } = useFileHandling();
 
   const { handleProductChange } = useFormHandlers();
@@ -220,6 +223,10 @@ export default function ProductForm() {
             onUpdateProduct={async () => {
               // This will be handled by the submit function
             }}
+            onReorderProductImages={reorderProductImages}
+            onReorderExistingImages={(reorderedImages) => {
+              setFormData(prev => ({ ...prev, images: reorderedImages }));
+            }}
           />
         </div>
 
@@ -240,6 +247,12 @@ export default function ProductForm() {
           onVariantAlt={() => {}}
           onRemoveNewVariantImage={onRemoveNewVariantImage}
           onRemoveExistingVariantImage={onRemoveExistingVariantImage}
+          onReorderVariantImages={(variantIndex, reorderedFiles) => {
+            reorderVariantImages(variantIndex, reorderedFiles, setVariantsData);
+          }}
+          onReorderExistingVariantImages={(variantIndex, reorderedImages) => {
+            reorderExistingVariantImages(variantIndex, reorderedImages, setVariantsData);
+          }}
           isEditing={isEditing}
         />
 

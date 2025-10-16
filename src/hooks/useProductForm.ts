@@ -43,9 +43,10 @@ export function useProductForm() {
   });
 
   const generateUniqueSKU = () => {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-    return `SKU-${timestamp}-${random}`;
+    const timestamp = Date.now().toString();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const uuid = crypto.randomUUID().substring(0, 8).toUpperCase();
+    return `SKU-${timestamp}-${random}-${uuid}`;
   };
 
   const [variantsData, setVariantsData] = useState<MultipleVariantsData>({
@@ -53,7 +54,6 @@ export function useProductForm() {
       {
         sku: generateUniqueSKU(),
         label: '',
-        flavor: '',
         size: '',
         price_cents: '',
         compare_at_price_cents: '',
@@ -149,7 +149,6 @@ export function useProductForm() {
                 id: variant.id, // Preserve the variant ID
                 sku: variant.sku || '',
                 label: variant.label || '',
-                flavor: variant.flavor || '',
                 size: variant.size || '',
                 price_cents: String(variant.price_cents || ''),
                 compare_at_price_cents: variant.compare_at_price_cents
@@ -187,7 +186,6 @@ export function useProductForm() {
         {
           sku: generateUniqueSKU(),
           label: '',
-          flavor: '',
           size: '',
           price_cents: '',
           compare_at_price_cents: '',
@@ -348,7 +346,6 @@ export function useProductForm() {
         {
           sku: `SKU-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
           label: '250g',
-          flavor: 'Sin sabor',
           size: '250g',
           price_cents: '2999',
           compare_at_price_cents: '3999',
@@ -360,7 +357,6 @@ export function useProductForm() {
         {
           sku: `SKU-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
           label: '500g',
-          flavor: 'Sin sabor',
           size: '500g',
           price_cents: '4999',
           compare_at_price_cents: '6999',
@@ -372,7 +368,6 @@ export function useProductForm() {
         {
           sku: `SKU-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
           label: '1kg',
-          flavor: 'Sin sabor',
           size: '1kg',
           price_cents: '8999',
           compare_at_price_cents: '12999',

@@ -26,7 +26,6 @@ export interface NutritionFactsData {
 export interface VariantFormData {
   sku: string;
   label: string;
-  flavor: string;
   size: string;
   price_cents: string;
   compare_at_price_cents: string;

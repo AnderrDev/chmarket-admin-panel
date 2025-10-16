@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { VariantFormData } from '@/types/productForm';
 import { formatPriceInput, parsePriceInput } from '@/utils/format';
+import DragAndDropImageGallery from './DragAndDropImageGallery';
 
 interface MultipleVariantsFormProps {
   variantsData: {
@@ -29,6 +30,14 @@ interface MultipleVariantsFormProps {
     variantIndex: number,
     imageIndex: number
   ) => void;
+  onReorderVariantImages?: (
+    variantIndex: number,
+    reorderedFiles: File[]
+  ) => void;
+  onReorderExistingVariantImages?: (
+    variantIndex: number,
+    reorderedImages: { url: string; alt?: string; path?: string }[]
+  ) => void;
   isEditing?: boolean;
 }
 
@@ -42,6 +51,8 @@ export default function MultipleVariantsForm({
   onVariantAlt,
   onRemoveNewVariantImage,
   onRemoveExistingVariantImage,
+  onReorderVariantImages,
+  onReorderExistingVariantImages,
   isEditing = false,
 }: MultipleVariantsFormProps) {
   const handleVariantChange = (
@@ -144,12 +155,16 @@ export default function MultipleVariantsForm({
                   type="button"
                   onClick={() => {
                     const generateUniqueSKU = () => {
-                      const timestamp = Date.now().toString().slice(-6);
+                      const timestamp = Date.now().toString();
                       const random = Math.random()
                         .toString(36)
-                        .substring(2, 5)
+                        .substring(2, 8)
                         .toUpperCase();
-                      return `SKU-${timestamp}-${random}`;
+                      const uuid = crypto
+                        .randomUUID()
+                        .substring(0, 8)
+                        .toUpperCase();
+                      return `SKU-${timestamp}-${random}-${uuid}`;
                     };
                     onUpdateVariant(index, 'sku', generateUniqueSKU());
                   }}
@@ -172,23 +187,15 @@ export default function MultipleVariantsForm({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Sabor</label>
-              <input
-                className="input-field"
-                name="flavor"
-                value={variant.flavor}
-                onChange={e => handleVariantChange(index, e)}
-                placeholder="Vainilla"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Tamaño</label>
+              <label className="block text-sm font-medium mb-1">
+                Tamaño (opcional)
+              </label>
               <input
                 className="input-field"
                 name="size"
                 value={variant.size}
                 onChange={e => handleVariantChange(index, e)}
-                placeholder="300g"
+                placeholder="300g (opcional)"
               />
             </div>
             <div>
@@ -266,62 +273,60 @@ export default function MultipleVariantsForm({
               />
               {/* Existing Images */}
               {variant.existingImages && variant.existingImages.length > 0 && (
-                <div className="mt-3">
-                  <h5 className="text-sm font-medium mb-2 text-gray-700">
-                    Imágenes existentes:
-                  </h5>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {variant.existingImages.map((img, i) => (
-                      <div
-                        key={`existing-${i}`}
-                        className="border rounded p-2 relative"
-                      >
-                        <img
-                          src={img.url}
-                          alt={img.alt || ''}
-                          className="h-24 w-full object-cover rounded"
-                        />
-                        <button
-                          type="button"
-                          className="absolute top-2 right-2 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded shadow"
-                          onClick={() => onRemoveExistingVariantImage(index, i)}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <DragAndDropImageGallery
+                  images={variant.existingImages.map((img, i) => ({
+                    id: `existing-${i}`,
+                    url: img.url,
+                    alt: img.alt || '',
+                    path: img.path,
+                  }))}
+                  onReorder={reorderedImages => {
+                    if (onReorderExistingVariantImages) {
+                      const reorderedExistingImages = reorderedImages.map(
+                        img => ({
+                          url: img.url,
+                          alt: img.alt,
+                          path: img.path,
+                        })
+                      );
+                      onReorderExistingVariantImages(
+                        index,
+                        reorderedExistingImages
+                      );
+                    }
+                  }}
+                  onRemove={imageIndex =>
+                    onRemoveExistingVariantImage(index, imageIndex)
+                  }
+                  title="Imágenes existentes"
+                  showRemoveButton={true}
+                />
               )}
 
               {/* New Images */}
               {variant.files.length > 0 && (
-                <div className="mt-3">
-                  <h5 className="text-sm font-medium mb-2 text-gray-700">
-                    Nuevas imágenes:
-                  </h5>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {variant.files.map((f, i) => (
-                      <div
-                        key={`new-${i}`}
-                        className="border rounded p-2 relative"
-                      >
-                        <img
-                          src={URL.createObjectURL(f)}
-                          alt=""
-                          className="h-24 w-full object-cover rounded"
-                        />
-                        <button
-                          type="button"
-                          className="absolute top-2 right-2 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded shadow"
-                          onClick={() => onRemoveNewVariantImage(index, i)}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <DragAndDropImageGallery
+                  images={variant.files.map((file, i) => ({
+                    id: `new-${i}`,
+                    url: URL.createObjectURL(file),
+                    alt: '',
+                    isNew: true,
+                    file: file,
+                  }))}
+                  onReorder={reorderedImages => {
+                    if (onReorderVariantImages) {
+                      const reorderedFiles = reorderedImages.map(
+                        img => img.file!
+                      );
+                      onReorderVariantImages(index, reorderedFiles);
+                    }
+                  }}
+                  onRemove={fileIndex =>
+                    onRemoveNewVariantImage(index, fileIndex)
+                  }
+                  title="Nuevas imágenes"
+                  showRemoveButton={true}
+                />
               )}
               {isEditing && (
                 <p className="mt-2 text-sm text-gray-600">

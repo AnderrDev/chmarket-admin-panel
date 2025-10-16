@@ -57,9 +57,14 @@ export function useProductSubmit() {
         if (
           !variant.sku.trim() ||
           !variant.label.trim() ||
-          !variant.price_cents
+          !variant.price_cents ||
+          !variant.compare_at_price_cents ||
+          !variant.in_stock ||
+          !variant.low_stock_threshold
         ) {
-          toast.error('Completa SKU, Label y Precio de todas las variantes');
+          toast.error(
+            'Completa SKU, Label, Precio, Precio de Comparación, Stock y Low Stock de todas las variantes'
+          );
           return false;
         }
       }
@@ -119,11 +124,15 @@ export function useProductSubmit() {
 
         // Check if product data changed
         if (changeDetection.hasProductChanges()) {
-          const uploadedProductImages = await handleImageUpload(
-            productFiles,
-            `products/${productId}`,
-            []
-          );
+          // Only upload images if there are new files
+          const uploadedProductImages =
+            productFiles.length > 0
+              ? await handleImageUpload(
+                  productFiles,
+                  `products/${productId}`,
+                  []
+                )
+              : [];
 
           const payload = {
             name: formData.name.trim(),
@@ -169,18 +178,20 @@ export function useProductSubmit() {
 
           for (const change of changedVariants) {
             if (change.action === 'create') {
-              // Upload variant images if any
-              const variantImages = await handleImageUpload(
-                change.variant.files,
-                `variants/${productId}`,
-                []
-              );
+              // Upload variant images only if there are new files
+              const variantImages =
+                change.variant.files.length > 0
+                  ? await handleImageUpload(
+                      change.variant.files,
+                      `variants/${productId}`,
+                      []
+                    )
+                  : [];
 
               const variantPayload = {
                 sku: change.variant.sku.trim(),
                 label: change.variant.label.trim(),
-                flavor: change.variant.flavor.trim() || undefined,
-                size: change.variant.size.trim() || undefined,
+                size: change.variant.size?.trim() || '',
                 price_cents: parseInt(change.variant.price_cents || '0', 10),
                 compare_at_price_cents: change.variant.compare_at_price_cents
                   ? parseInt(change.variant.compare_at_price_cents, 10)
@@ -193,14 +204,49 @@ export function useProductSubmit() {
                 is_default: change.variant.is_default,
                 images: variantImages,
               };
-              await createVariant(productId, variantPayload);
+              try {
+                await createVariant(productId, variantPayload);
+              } catch (error: any) {
+                if (
+                  error.message?.includes('Conflicto: valor único ya existe') ||
+                  error.message?.includes(
+                    'duplicate key value violates unique constraint'
+                  )
+                ) {
+                  // Generar un nuevo SKU único y reintentar
+                  const generateUniqueSKU = () => {
+                    const timestamp = Date.now().toString();
+                    const random = Math.random()
+                      .toString(36)
+                      .substring(2, 8)
+                      .toUpperCase();
+                    const uuid = crypto
+                      .randomUUID()
+                      .substring(0, 8)
+                      .toUpperCase();
+                    return `SKU-${timestamp}-${random}-${uuid}`;
+                  };
+
+                  const newVariantPayload = {
+                    ...variantPayload,
+                    sku: generateUniqueSKU(),
+                  };
+
+                  await createVariant(productId, newVariantPayload);
+                } else {
+                  throw error;
+                }
+              }
             } else if (change.action === 'update') {
-              // Upload variant images if any
-              const variantImages = await handleImageUpload(
-                change.variant.files,
-                `variants/${productId}`,
-                []
-              );
+              // Upload variant images only if there are new files
+              const variantImages =
+                change.variant.files.length > 0
+                  ? await handleImageUpload(
+                      change.variant.files,
+                      `variants/${productId}`,
+                      []
+                    )
+                  : [];
 
               // Use the existingImages from the form data (after user deletions)
               const remainingExistingImages =
@@ -209,8 +255,7 @@ export function useProductSubmit() {
               const variantPayload = {
                 sku: change.variant.sku.trim(),
                 label: change.variant.label.trim(),
-                flavor: change.variant.flavor.trim() || undefined,
-                size: change.variant.size.trim() || undefined,
+                size: change.variant.size?.trim() || '',
                 price_cents: parseInt(change.variant.price_cents || '0', 10),
                 compare_at_price_cents: change.variant.compare_at_price_cents
                   ? parseInt(change.variant.compare_at_price_cents, 10)
@@ -255,14 +300,7 @@ export function useProductSubmit() {
             return {
               sku: String(variant.sku || '').trim(),
               label: String(variant.label || '').trim(),
-              flavor:
-                variant.flavor && variant.flavor.trim()
-                  ? String(variant.flavor).trim()
-                  : undefined,
-              size:
-                variant.size && variant.size.trim()
-                  ? String(variant.size).trim()
-                  : undefined,
+              size: variant.size?.trim() || '',
               price_cents: parseInt(String(variant.price_cents || '0'), 10),
               compare_at_price_cents: variant.compare_at_price_cents
                 ? parseInt(String(variant.compare_at_price_cents), 10)
