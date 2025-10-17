@@ -360,9 +360,9 @@ Deno.serve(async req => {
 
     // Construir URLs de retorno
     const backUrls = {
-      success: `${origin}/success?external_reference=${orderNumber}`,
-      pending: `${origin}/pending?external_reference=${orderNumber}`,
-      failure: `${origin}/failure?external_reference=${orderNumber}`,
+      success: `${origin}/success?external_reference=${orderNumber}&email=${encodeURIComponent(body.email)}`,
+      pending: `${origin}/pending?external_reference=${orderNumber}&email=${encodeURIComponent(body.email)}`,
+      failure: `${origin}/failure?external_reference=${orderNumber}&email=${encodeURIComponent(body.email)}`,
     };
 
     const notificationUrl = `${SUPABASE_URL}/functions/v1/mp-webhook`;
