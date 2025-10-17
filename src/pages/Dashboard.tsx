@@ -17,9 +17,13 @@ import { DashboardStats } from '@/types/index.ts';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { products, getProductVariants } = useProducts();
-  const { getOrdersStats, orders } = useOrders();
-  const { discounts } = useDiscounts();
+  const {
+    products,
+    getProductVariants,
+    loading: productsLoading,
+  } = useProducts();
+  const { getOrdersStats, orders, loading: ordersLoading } = useOrders();
+  const { discounts, loading: discountsLoading } = useDiscounts();
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     totalOrders: 0,
@@ -100,9 +104,9 @@ export default function Dashboard() {
 
         setStats({
           totalProducts: products.length,
-          totalOrders: orderStats.total,
+          totalOrders: orderStats.totalOrders,
           totalRevenue: totalRevenueFromPaidOrders,
-          pendingOrders: orderStats.byStatus['CREATED'] || 0,
+          pendingOrders: orderStats.pendingOrders,
           lowStockProducts,
           activeDiscounts,
         });
@@ -113,7 +117,9 @@ export default function Dashboard() {
       }
     };
 
-    if (products.length > 0 && orders.length > 0) {
+    // Ejecutar loadStats cuando los hooks hayan terminado de cargar
+    // No esperar órdenes ya que pueden estar vacías
+    if (!productsLoading && !ordersLoading && !discountsLoading) {
       loadStats();
     }
   }, [products, orders, discounts]);
@@ -189,7 +195,7 @@ export default function Dashboard() {
     },
   ];
 
-  if (loading) {
+  if (loading || productsLoading || ordersLoading || discountsLoading) {
     return (
       <div className="animate-pulse">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
