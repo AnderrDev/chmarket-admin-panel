@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -13,8 +13,8 @@ export default defineConfig({
     port: 3001,
     open: true,
     hmr: {
-      overlay: true
-    }
+      overlay: true,
+    },
   },
   build: {
     target: 'esnext',
@@ -26,12 +26,11 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
           ui: ['lucide-react', 'react-hot-toast'],
-          forms: ['react-hook-form'],
-          supabase: ['@supabase/supabase-js']
-        }
-      }
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
     include: [
@@ -40,8 +39,7 @@ export default defineConfig({
       'react-router-dom',
       'lucide-react',
       'react-hot-toast',
-      'react-hook-form',
-      '@supabase/supabase-js'
-    ]
-  }
-})
+      '@supabase/supabase-js',
+    ],
+  },
+});
