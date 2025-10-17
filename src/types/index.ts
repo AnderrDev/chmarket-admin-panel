@@ -1,9 +1,19 @@
 // src/types/index.ts
 
-export type Currency = 'COP'
-export type DiscountType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING'
-export type OrderStatus = 'CREATED' | 'PAID' | 'FULFILLED' | 'CANCELLED' | 'REFUNDED'
-export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'REFUNDED'
+export type Currency = 'COP';
+export type DiscountType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
+export type OrderStatus =
+  | 'CREATED'
+  | 'PAID'
+  | 'FULFILLED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+export type PaymentStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'REFUNDED';
 
 export type Json =
   | { [key: string]: Json }
@@ -11,164 +21,194 @@ export type Json =
   | string
   | number
   | boolean
-  | null
+  | null;
 
 // Guardamos url, alt y path (para borrar en Storage)
-export type ImageRef = string | { url: string; alt?: string; path?: string }
+export type ImageRef = string | { url: string; alt?: string; path?: string };
 
 export interface Product {
-  id: string
-  slug: string
-  name: string
+  id: string;
+  slug: string;
+  name: string;
 
-  description?: string
-  long_description?: string
-  features?: string[]
-  ingredients?: string[]
+  description?: string;
+  long_description?: string;
+  features?: string[];
+  ingredients?: string[];
 
-  images?: ImageRef[]
+  images?: ImageRef[];
 
-  is_featured: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  deleted_at?: string | null
+  is_featured: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
 
-  category_id: string | null
-  category_name?: string
+  category_id: string | null;
+  category_name?: string;
 
-  default_variant_id?: string
-  default_price_cents?: number
+  default_variant_id?: string;
+  default_price_cents?: number;
 }
 
 export interface ProductVariant {
-  id: string
-  product_id: string
-  sku: string
-  label: string
-  flavor?: string
-  size?: string
-  options?: Json
+  id: string;
+  product_id: string;
+  sku: string;
+  label: string;
+  flavor?: string;
+  size?: string;
+  options?: Json;
 
-  price_cents: number
-  compare_at_price_cents?: number | null
-  currency: Currency
+  price_cents: number;
+  compare_at_price_cents?: number | null;
+  currency: Currency;
 
-  in_stock: number
-  low_stock_threshold: number
+  in_stock: number;
+  low_stock_threshold: number;
 
-  weight_grams?: number | null
-  dimensions?: Json
-  images?: ImageRef[]
+  weight_grams?: number | null;
+  dimensions?: Json;
+  images?: ImageRef[];
 
-  position?: number
-  is_default?: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  deleted_at?: string | null
+  position?: number;
+  is_default?: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
 }
 
 export interface Address {
-  city?: string
-  name?: string
-  email?: string
-  phone?: string
-  address?: string
-  country?: string
-  zipCode?: string
-  documentType?: string
-  documentNumber?: string
+  city?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  country?: string;
+  zipCode?: string;
+  documentType?: string;
+  documentNumber?: string;
 }
 
 export interface Order {
-  id: string
-  order_number: string
-  email: string
-  status: OrderStatus
+  id: string;
+  order_number: string;
+  email: string;
+  status: OrderStatus;
 
-  subtotal_cents: number
-  shipping_cents: number
-  discount_cents: number
-  total_cents: number
-  currency: Currency
+  subtotal_cents: number;
+  shipping_cents: number;
+  discount_cents: number;
+  total_cents: number;
+  currency: Currency;
 
-  shipping_address?: Address
-  billing_address?: Address
+  shipping_address?: Address;
+  billing_address?: Address;
 
-  payment_provider?: string
-  payment_status?: PaymentStatus
-  payment_preference_id?: string | null
-  payment_id?: string | null
-  payment_external_reference?: string | null
-  payment_raw?: Json | null
+  payment_provider?: string;
+  payment_status?: PaymentStatus;
+  payment_preference_id?: string | null;
+  payment_id?: string | null;
+  payment_external_reference?: string | null;
+  payment_raw?: Json | null;
 
-  created_at: string
-  updated_at: string
+  created_at: string;
+  updated_at: string;
+
+  // Información de descuentos aplicados
+  order_discounts?: OrderDiscount[];
+}
+
+export interface OrderDiscount {
+  id: string;
+  code_snapshot: string;
+  type_snapshot: DiscountType;
+  value_percent_snapshot?: number | null;
+  value_cents_snapshot?: number | null;
+  amount_applied_cents: number;
+  applies_to_all_products_snapshot: boolean;
+  applicable_product_ids_snapshot?: string[] | null;
+  applicable_category_ids_snapshot?: string[] | null;
 }
 
 export interface OrderItem {
-  id: string
-  order_id: string
-  product_id: string
-  variant_id: string
-  name_snapshot: string
-  variant_label?: string
-  unit_price_cents: number
-  quantity: number
+  id: string;
+  order_id: string;
+  product_id: string;
+  variant_id: string;
+  name_snapshot: string;
+  variant_label?: string;
+  unit_price_cents: number;
+  quantity: number;
 }
 
 export interface DiscountCode {
-  id: string
-  code: string
-  type: DiscountType
-  value_percent?: number | null
-  value_cents?: number | null
-  currency: Currency
-  min_order_cents: number
-  max_redemptions_total?: number | null
-  max_redemptions_per_customer?: number | null
-  combinable: boolean
-  start_at?: string | null
-  end_at?: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string
+  id: string;
+  code: string;
+  type: DiscountType;
+  value_percent?: number | null;
+  value_cents?: number | null;
+  currency: Currency;
+  min_order_cents: number;
+  max_redemptions_total?: number | null;
+  // TEMPORAL: max_redemptions_per_customer?: number | null
+  combinable: boolean;
+  start_at?: string | null;
+  end_at?: string | null;
+  is_active: boolean;
+  applies_to_all_products: boolean;
+  applicable_product_ids?: string[] | null;
+  applicable_category_ids?: string[] | null;
+  created_at: string;
+  updated_at: string;
+  // Información de usos
+  order_discounts?: { count: number }[];
+  usage_count?: number; // Campo calculado para facilitar el uso
 }
 
 export interface Category {
-  id: string
-  name: string
-  created_at: string
-  updated_at: string
-  product_count?: number
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  product_count?: number;
 }
 
 export interface CategoryFormData {
-  name: string
+  name: string;
 }
 
 export interface DashboardStats {
-  totalProducts: number
-  totalOrders: number
-  totalRevenue: number
-  pendingOrders: number
-  lowStockProducts: number
-  activeDiscounts: number
+  totalProducts: number;
+  totalOrders: number;
+  totalRevenue: number;
+  pendingOrders: number;
+  lowStockProducts: number;
+  activeDiscounts: number;
 }
 
 // Helpers
-export function isImageObject(x: ImageRef): x is { url: string; alt?: string; path?: string } {
-  return !!x && typeof x === 'object' && 'url' in x && typeof (x as any).url === 'string'
+export function isImageObject(
+  x: ImageRef
+): x is { url: string; alt?: string; path?: string } {
+  return (
+    !!x &&
+    typeof x === 'object' &&
+    'url' in x &&
+    typeof (x as any).url === 'string'
+  );
 }
-export function normalizeImages(arr?: ImageRef[]): { url: string; alt?: string; path?: string }[] {
-  if (!arr || !Array.isArray(arr)) return []
+export function normalizeImages(
+  arr?: ImageRef[]
+): { url: string; alt?: string; path?: string }[] {
+  if (!arr || !Array.isArray(arr)) return [];
   return arr
     .map(img => (typeof img === 'string' ? { url: img } : img))
-    .filter(i => !!i?.url)
+    .filter(i => !!i?.url);
 }
 export function firstImageUrl(arr?: ImageRef[]): string | undefined {
-  if (!arr || !arr.length) return undefined
-  const first = arr[0]
-  return typeof first === 'string' ? first : first?.url
+  if (!arr || !arr.length) return undefined;
+  const first = arr[0];
+  return typeof first === 'string' ? first : first?.url;
 }

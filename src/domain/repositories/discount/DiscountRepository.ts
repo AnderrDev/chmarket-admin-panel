@@ -8,7 +8,7 @@ export interface DiscountFormData {
   value_cents?: number;
   min_order_cents: number;
   max_redemptions_total?: number;
-  max_redemptions_per_customer?: number;
+  // TEMPORAL: max_redemptions_per_customer?: number;
   combinable: boolean;
   start_at?: string | null;
   end_at?: string | null;

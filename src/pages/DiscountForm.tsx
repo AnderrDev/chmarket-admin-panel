@@ -2,14 +2,19 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Tag } from 'lucide-react';
 import { useDiscounts } from '@/hooks/useDiscounts.ts';
+import { useProducts } from '@/hooks/useProducts.ts';
+import { useCategories } from '@/hooks/useCategories.ts';
 import { DiscountCode } from '@/types/index.ts';
 import { formatPriceInput, parsePriceInput } from '@/utils/format';
+import MultiSelect from '@/components/MultiSelect';
 import toast from 'react-hot-toast';
 
 export default function DiscountForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { createDiscount, updateDiscount, discounts } = useDiscounts();
+  const { products } = useProducts();
+  const { categories } = useCategories();
   const [loading, setLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,11 +24,15 @@ export default function DiscountForm() {
     value_cents: '',
     min_order_cents: '0',
     max_redemptions_total: '',
-    max_redemptions_per_customer: '',
+    // TEMPORAL: max_redemptions_per_customer: '',
     combinable: false,
     start_at: '',
     end_at: '',
     is_active: true,
+    // Nuevos campos para scope de productos
+    applies_to_all_products: true,
+    applicable_product_ids: [] as string[],
+    applicable_category_ids: [] as string[],
   });
 
   const isEditing = Boolean(id);
@@ -53,12 +62,16 @@ export default function DiscountForm() {
           min_order_cents: discount.min_order_cents.toString(),
           max_redemptions_total:
             discount.max_redemptions_total?.toString() || '',
-          max_redemptions_per_customer:
-            discount.max_redemptions_per_customer?.toString() || '',
+          // TEMPORAL: max_redemptions_per_customer:
+          //   discount.max_redemptions_per_customer?.toString() || '',
           combinable: discount.combinable,
           start_at: formatDateForInput(discount.start_at),
           end_at: formatDateForInput(discount.end_at),
           is_active: discount.is_active,
+          // Nuevos campos para scope de productos
+          applies_to_all_products: discount.applies_to_all_products ?? true,
+          applicable_product_ids: discount.applicable_product_ids || [],
+          applicable_category_ids: discount.applicable_category_ids || [],
         });
         setDataLoaded(true);
       }
@@ -82,33 +95,59 @@ export default function DiscountForm() {
         }
       }
 
+      // Validar scope de productos
+      if (!formData.applies_to_all_products) {
+        if (
+          formData.applicable_product_ids.length === 0 &&
+          formData.applicable_category_ids.length === 0
+        ) {
+          toast.error(
+            'Debe seleccionar al menos un producto o una categoría para cupones específicos'
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       const discountData: Partial<DiscountCode> = {
         code: formData.code,
         type: formData.type,
         min_order_cents: parseInt(formData.min_order_cents),
         max_redemptions_total: formData.max_redemptions_total
           ? parseInt(formData.max_redemptions_total)
-          : undefined,
-        max_redemptions_per_customer: formData.max_redemptions_per_customer
-          ? parseInt(formData.max_redemptions_per_customer)
-          : undefined,
+          : null,
+        // TEMPORAL: max_redemptions_per_customer: formData.max_redemptions_per_customer
+        //   ? parseInt(formData.max_redemptions_per_customer)
+        //   : undefined,
         start_at: formData.start_at || null,
         end_at: formData.end_at || null,
         combinable: formData.combinable,
         is_active: formData.is_active,
         currency: 'COP',
+        // Nuevos campos para scope de productos
+        applies_to_all_products: formData.applies_to_all_products,
+        applicable_product_ids: formData.applies_to_all_products
+          ? null
+          : formData.applicable_product_ids.length > 0
+            ? formData.applicable_product_ids
+            : null,
+        applicable_category_ids: formData.applies_to_all_products
+          ? null
+          : formData.applicable_category_ids.length > 0
+            ? formData.applicable_category_ids
+            : null,
       };
 
       // Limpiar valores según el tipo
       if (formData.type === 'PERCENT') {
         discountData.value_percent = parseInt(formData.value_percent);
-        discountData.value_cents = undefined;
+        discountData.value_cents = null;
       } else if (formData.type === 'FIXED') {
         discountData.value_cents = parseInt(formData.value_cents);
-        discountData.value_percent = undefined;
+        discountData.value_percent = null;
       } else {
-        discountData.value_percent = undefined;
-        discountData.value_cents = undefined;
+        discountData.value_percent = null;
+        discountData.value_cents = null;
       }
 
       if (isEditing) {
@@ -152,8 +191,8 @@ export default function DiscountForm() {
   };
 
   const handlePriceFocus = (
-    field: 'value_cents' | 'min_order_cents',
-    e: React.FocusEvent<HTMLInputElement>
+    _field: 'value_cents' | 'min_order_cents',
+    _e: React.FocusEvent<HTMLInputElement>
   ) => {
     // No hacer nada en el focus, solo formatear en el blur
     // Esto evita que se borre el valor al seleccionar el input
@@ -327,7 +366,8 @@ export default function DiscountForm() {
               />
             </div>
 
-            <div>
+            {/* TEMPORAL: Campo de máximo de usos por cliente removido */}
+            {/* <div>
               <label
                 htmlFor="max_redemptions_per_customer"
                 className="block text-sm font-medium text-gray-700 mb-1"
@@ -344,7 +384,7 @@ export default function DiscountForm() {
                 className="input-field"
                 placeholder="1"
               />
-            </div>
+            </div> */}
           </div>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -407,6 +447,106 @@ export default function DiscountForm() {
                 Combinable con otros cupones
               </span>
             </label>
+          </div>
+        </div>
+
+        {/* Sección de Scope de Productos */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">
+            Aplicación del Cupón
+          </h3>
+
+          <div className="space-y-6">
+            {/* Radio buttons para tipo de aplicación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Aplicar cupón a:
+              </label>
+              <div className="space-y-3">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="applies_to_all_products"
+                    checked={formData.applies_to_all_products}
+                    onChange={() =>
+                      setFormData(prev => ({
+                        ...prev,
+                        applies_to_all_products: true,
+                        applicable_product_ids: [],
+                        applicable_category_ids: [],
+                      }))
+                    }
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    Todos los productos
+                  </span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="applies_to_all_products"
+                    checked={!formData.applies_to_all_products}
+                    onChange={() =>
+                      setFormData(prev => ({
+                        ...prev,
+                        applies_to_all_products: false,
+                      }))
+                    }
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    Productos específicos
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Selector de productos específicos */}
+            {!formData.applies_to_all_products && (
+              <div className="space-y-4">
+                <MultiSelect
+                  options={products.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    description: p.description || '',
+                  }))}
+                  selected={formData.applicable_product_ids}
+                  onChange={selected =>
+                    setFormData(prev => ({
+                      ...prev,
+                      applicable_product_ids: selected,
+                    }))
+                  }
+                  label="Productos específicos"
+                  placeholder="Seleccionar productos..."
+                  searchPlaceholder="Buscar productos..."
+                />
+
+                <MultiSelect
+                  options={categories.map(c => ({ id: c.id, name: c.name }))}
+                  selected={formData.applicable_category_ids}
+                  onChange={selected =>
+                    setFormData(prev => ({
+                      ...prev,
+                      applicable_category_ids: selected,
+                    }))
+                  }
+                  label="Categorías específicas"
+                  placeholder="Seleccionar categorías..."
+                  searchPlaceholder="Buscar categorías..."
+                />
+
+                {formData.applicable_product_ids.length === 0 &&
+                  formData.applicable_category_ids.length === 0 && (
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                      Debe seleccionar al menos un producto o una categoría para
+                      cupones específicos.
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
         </div>
 

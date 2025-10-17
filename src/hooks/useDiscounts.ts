@@ -19,7 +19,14 @@ export function useDiscounts() {
     try {
       setLoading(true);
       const data = await listDiscountsUseCase.execute();
-      setDiscounts(data);
+
+      // Procesar datos para calcular usage_count
+      const processedData = data.map(discount => ({
+        ...discount,
+        usage_count: discount.order_discounts?.[0]?.count || 0,
+      }));
+
+      setDiscounts(processedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar cupones');
       toast.error('Error al cargar cupones');

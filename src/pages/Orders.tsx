@@ -1,22 +1,32 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Eye, ShoppingCart } from 'lucide-react'
-import { useOrders } from '@/hooks/useOrders.ts'
-import { formatCurrency, formatDate, formatStatus, getStatusColor } from '@/utils/format.ts'
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Eye, ShoppingCart } from 'lucide-react';
+import { useOrders } from '@/hooks/useOrders.ts';
+import {
+  formatCurrency,
+  formatDate,
+  formatStatus,
+  getStatusColor,
+} from '@/utils/format.ts';
 
 export default function Orders() {
-  const { orders, loading } = useOrders()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const { orders, loading } = useOrders();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const filteredOrders = orders
     .filter(order => {
-      const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           order.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = filterStatus === 'all' || order.status === filterStatus
-      return matchesSearch && matchesStatus
+      const matchesSearch =
+        order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        filterStatus === 'all' || order.status === filterStatus;
+      return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
   if (loading) {
     return (
@@ -36,7 +46,7 @@ export default function Orders() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -52,7 +62,10 @@ export default function Orders() {
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="search"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Buscar
             </label>
             <input
@@ -60,18 +73,21 @@ export default function Orders() {
               id="search"
               placeholder="Buscar por número de orden o email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="input-field"
             />
           </div>
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Estado
             </label>
             <select
               id="status"
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={e => setFilterStatus(e.target.value)}
               className="input-field"
             >
               <option value="all">Todos los estados</option>
@@ -88,7 +104,7 @@ export default function Orders() {
       {/* Lista de órdenes */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
-          {filteredOrders.map((order) => (
+          {filteredOrders.map(order => (
             <li key={order.id}>
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex items-center justify-between">
@@ -103,7 +119,9 @@ export default function Orders() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           #{order.order_number}
                         </p>
-                        <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        <span
+                          className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+                        >
                           {formatStatus(order.status)}
                         </span>
                       </div>
@@ -111,9 +129,49 @@ export default function Orders() {
                         <span className="truncate">{order.email}</span>
                         <span className="mx-2">•</span>
                         <span>{formatCurrency(order.total_cents)}</span>
+                        {order.discount_cents > 0 && (
+                          <>
+                            <span className="mx-2">•</span>
+                            <span className="text-green-600 font-medium">
+                              -{formatCurrency(order.discount_cents)} descuento
+                            </span>
+                          </>
+                        )}
                         <span className="mx-2">•</span>
                         <span>{formatDate(order.created_at)}</span>
                       </div>
+                      {order.order_discounts &&
+                        order.order_discounts.length > 0 && (
+                          <div className="mt-1 flex items-center space-x-2">
+                            {order.order_discounts.map((discount, index) => (
+                              <span
+                                key={discount.id}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                              >
+                                {discount.code_snapshot}
+                                {discount.type_snapshot === 'PERCENT' &&
+                                  discount.value_percent_snapshot && (
+                                    <span className="ml-1">
+                                      ({discount.value_percent_snapshot}%)
+                                    </span>
+                                  )}
+                                {discount.type_snapshot === 'FIXED' &&
+                                  discount.value_cents_snapshot && (
+                                    <span className="ml-1">
+                                      (-
+                                      {formatCurrency(
+                                        discount.value_cents_snapshot
+                                      )}
+                                      )
+                                    </span>
+                                  )}
+                                {discount.type_snapshot === 'FREE_SHIPPING' && (
+                                  <span className="ml-1">(Envío gratis)</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       <div className="mt-1 text-sm text-gray-500">
                         {order.payment_status && (
                           <span className="mr-2">
@@ -121,9 +179,7 @@ export default function Orders() {
                           </span>
                         )}
                         {order.payment_provider && (
-                          <span>
-                            Via: {order.payment_provider}
-                          </span>
+                          <span>Via: {order.payment_provider}</span>
                         )}
                       </div>
                     </div>
@@ -147,12 +203,13 @@ export default function Orders() {
       {filteredOrders.length === 0 && (
         <div className="text-center py-12">
           <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No hay órdenes</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No hay órdenes
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || filterStatus !== 'all' 
+            {searchTerm || filterStatus !== 'all'
               ? 'No se encontraron órdenes con los filtros aplicados.'
-              : 'Aún no hay órdenes en la tienda.'
-            }
+              : 'Aún no hay órdenes en la tienda.'}
           </p>
         </div>
       )}
@@ -161,23 +218,35 @@ export default function Orders() {
       {orders.length > 0 && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white shadow rounded-lg p-4">
-            <div className="text-sm font-medium text-gray-500">Total Órdenes</div>
-            <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
-          </div>
-          <div className="bg-white shadow rounded-lg p-4">
-            <div className="text-sm font-medium text-gray-500">Ingresos Totales</div>
+            <div className="text-sm font-medium text-gray-500">
+              Total Órdenes
+            </div>
             <div className="text-2xl font-bold text-gray-900">
-              {formatCurrency(orders.reduce((sum, order) => sum + order.total_cents, 0))}
+              {orders.length}
             </div>
           </div>
           <div className="bg-white shadow rounded-lg p-4">
-            <div className="text-sm font-medium text-gray-500">Órdenes Pendientes</div>
+            <div className="text-sm font-medium text-gray-500">
+              Ingresos Totales
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {formatCurrency(
+                orders.reduce((sum, order) => sum + order.total_cents, 0)
+              )}
+            </div>
+          </div>
+          <div className="bg-white shadow rounded-lg p-4">
+            <div className="text-sm font-medium text-gray-500">
+              Órdenes Pendientes
+            </div>
             <div className="text-2xl font-bold text-gray-900">
               {orders.filter(o => o.status === 'CREATED').length}
             </div>
           </div>
           <div className="bg-white shadow rounded-lg p-4">
-            <div className="text-sm font-medium text-gray-500">Órdenes Pagadas</div>
+            <div className="text-sm font-medium text-gray-500">
+              Órdenes Pagadas
+            </div>
             <div className="text-2xl font-bold text-gray-900">
               {orders.filter(o => o.status === 'PAID').length}
             </div>
@@ -185,5 +254,5 @@ export default function Orders() {
         </div>
       )}
     </div>
-  )
+  );
 }

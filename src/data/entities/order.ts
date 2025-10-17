@@ -5,6 +5,7 @@ import type {
   OrderStatus,
   PaymentStatus,
   Address,
+  DiscountType,
 } from './common';
 
 export interface Order {
@@ -31,6 +32,21 @@ export interface Order {
 
   created_at: string;
   updated_at: string;
+
+  // Información de descuentos aplicados
+  order_discounts?: OrderDiscount[];
+}
+
+export interface OrderDiscount {
+  id: string;
+  code_snapshot: string;
+  type_snapshot: DiscountType;
+  value_percent_snapshot?: number | null;
+  value_cents_snapshot?: number | null;
+  amount_applied_cents: number;
+  applies_to_all_products_snapshot: boolean;
+  applicable_product_ids_snapshot?: string[] | null;
+  applicable_category_ids_snapshot?: string[] | null;
 }
 
 export interface OrderItem {
