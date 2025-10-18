@@ -26,3 +26,9 @@
 
 [build.processing.images]
   compress = true
+
+# Redirects for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
