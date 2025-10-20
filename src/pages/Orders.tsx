@@ -231,7 +231,12 @@ export default function Orders() {
             </div>
             <div className="text-2xl font-bold text-gray-900">
               {formatCurrency(
-                orders.reduce((sum, order) => sum + order.total_cents, 0)
+                orders
+                  .filter(
+                    order =>
+                      order.status === 'PAID' || order.status === 'FULFILLED'
+                  )
+                  .reduce((sum, order) => sum + order.total_cents, 0)
               )}
             </div>
           </div>
