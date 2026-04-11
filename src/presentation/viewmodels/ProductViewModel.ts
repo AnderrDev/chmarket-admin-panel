@@ -47,7 +47,8 @@ export class ProductViewModel {
       this.loading = true;
       this.error = null;
 
-      this.products = await this.listProductsUseCase.execute(24);
+      const result = await this.listProductsUseCase.execute(1, 24);
+      this.products = result.data;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Error al cargar productos';

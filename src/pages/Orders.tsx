@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, ShoppingCart } from 'lucide-react';
+import { Eye, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders.ts';
 import {
   formatCurrency,
@@ -10,7 +10,7 @@ import {
 } from '@/utils/format.ts';
 
 export default function Orders() {
-  const { orders, loading } = useOrders();
+  const { orders, loading, page, setPage, totalOrders, totalPages } = useOrders();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -143,7 +143,7 @@ export default function Orders() {
                       {order.order_discounts &&
                         order.order_discounts.length > 0 && (
                           <div className="mt-1 flex items-center space-x-2">
-                            {order.order_discounts.map((discount, index) => (
+                            {order.order_discounts.map((discount) => (
                               <span
                                 key={discount.id}
                                 className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
@@ -211,6 +211,34 @@ export default function Orders() {
               ? 'No se encontraron órdenes con los filtros aplicados.'
               : 'Aún no hay órdenes en la tienda.'}
           </p>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between bg-white px-4 py-3 shadow rounded-lg">
+          <div className="text-sm text-gray-500">
+            Mostrando {(page - 1) * 50 + 1}–{Math.min(page * 50, totalOrders)} de {totalOrders} órdenes
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="inline-flex items-center px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="inline-flex items-center px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 

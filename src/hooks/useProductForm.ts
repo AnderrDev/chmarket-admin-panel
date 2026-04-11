@@ -277,7 +277,6 @@ export function useProductForm() {
           index,
           variant,
           action: 'update' as const,
-          variantId: variant.id, // Use the variant ID from the current variant
         });
       }
     });
@@ -293,7 +292,6 @@ export function useProductForm() {
           index: i,
           variant: originalVariantsData.variants[i],
           action: 'delete' as const,
-          variantId: originalVariantsData.variants[i].id, // Store the actual variant ID
         });
       }
     }

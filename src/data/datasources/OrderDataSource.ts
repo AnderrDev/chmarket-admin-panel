@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { Order, OrderItem } from '@/data/entities/order';
 
 export interface OrderDataSource {
-  listOrders(): Promise<Order[]>;
+  listOrders(page?: number, pageSize?: number): Promise<{ data: Order[]; total: number; page: number; pageSize: number }>;
   getOrder(id: string): Promise<Order | null>;
   getOrderItems(orderId: string): Promise<OrderItem[]>;
   updateOrderStatus(id: string, status: Order['status']): Promise<Order>;
@@ -34,10 +34,14 @@ export class SupabaseOrderDataSource implements OrderDataSource {
     };
   }
 
-  async listOrders(): Promise<Order[]> {
+  async listOrders(page = 1, pageSize = 50): Promise<{ data: Order[]; total: number; page: number; pageSize: number }> {
     const headers = await this.getAuthHeaders();
 
-    const response = await fetch(`${this.baseUrl}/list`, {
+    const url = new URL(`${this.baseUrl}/list`);
+    url.searchParams.set('page', String(page));
+    url.searchParams.set('pageSize', String(pageSize));
+
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers,
     });
@@ -48,7 +52,12 @@ export class SupabaseOrderDataSource implements OrderDataSource {
       throw new Error(result.error || 'Error al cargar órdenes');
     }
 
-    return result.data || [];
+    return {
+      data: result.data || [],
+      total: result.total ?? 0,
+      page: result.page ?? page,
+      pageSize: result.pageSize ?? pageSize,
+    };
   }
 
   async getOrder(id: string): Promise<Order | null> {

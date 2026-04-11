@@ -1,13 +1,13 @@
 // src/data/repositories/ProductRepositoryImpl.ts
 import type { Product, ProductVariant } from '@/data/entities/product';
-import type { ProductRepository } from '@/domain/repositories/product/ProductRepository';
+import type { ProductRepository, ProductListResult, LowStockRow } from '@/domain/repositories/product/ProductRepository';
 import type { ProductDataSource } from '@/data/datasources/ProductDataSource';
 
 export class ProductRepositoryImpl implements ProductRepository {
   constructor(private readonly dataSource: ProductDataSource) {}
 
-  async listProducts(limit: number = 24): Promise<Product[]> {
-    return this.dataSource.listProducts(limit);
+  async listProducts(page?: number, pageSize?: number): Promise<ProductListResult> {
+    return this.dataSource.listProducts(page, pageSize);
   }
 
   async getProduct(id: string): Promise<Product | null> {
@@ -49,5 +49,9 @@ export class ProductRepositoryImpl implements ProductRepository {
 
   async deleteVariant(variantId: string): Promise<void> {
     return this.dataSource.deleteVariant(variantId);
+  }
+
+  async getLowStockProducts(): Promise<LowStockRow[]> {
+    return this.dataSource.getLowStockProducts();
   }
 }

@@ -31,7 +31,7 @@ export async function uploadImagesToBucket(
 
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(path, f, { upsert: false, contentType: f.type || undefined })
+      .upload(path, f, { upsert: false, ...(f.type ? { contentType: f.type } : {}) })
     if (error) throw error
 
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)

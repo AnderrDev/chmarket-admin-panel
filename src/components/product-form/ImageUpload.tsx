@@ -93,15 +93,15 @@ export default function ImageUpload({
                     images={existingImages.map((img, index) => ({
                         id: `existing-${index}`,
                         url: typeof img === 'string' ? img : img.url,
-                        alt: typeof img === 'string' ? '' : (img.alt || ''),
-                        path: typeof img === 'string' ? undefined : img.path
+                        ...(typeof img !== 'string' && img.alt ? { alt: img.alt } : {}),
+                        ...(typeof img !== 'string' && img.path ? { path: img.path } : {}),
                     }))}
                     onReorder={(reorderedImages) => {
                         if (onReorderExistingImages) {
                             const reorderedExistingImages = reorderedImages.map(img => ({
                                 url: img.url,
-                                alt: img.alt,
-                                path: img.path
+                                ...(img.alt !== undefined ? { alt: img.alt } : {}),
+                                ...(img.path !== undefined ? { path: img.path } : {}),
                             }));
                             onReorderExistingImages(reorderedExistingImages);
                         }

@@ -90,6 +90,14 @@ export const formatPriceForDisplay = (cents: string | number): string => {
   return formatCurrency(numCents);
 };
 
+// Encode unsafe characters (spaces, parentheses, etc.) in storage URLs
+// without double-encoding already-encoded sequences.
+export const safeImageUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  // Replace literal spaces; leave everything else untouched
+  return url.replace(/ /g, '%20');
+};
+
 // Helper function to get product image with fallback to default variant image
 export const getProductImage = (
   product: any,
@@ -102,7 +110,8 @@ export const getProductImage = (
     product.images.length > 0
   ) {
     const mainImage = product.images[0];
-    return typeof mainImage === 'string' ? mainImage : mainImage.url;
+    const raw = typeof mainImage === 'string' ? mainImage : mainImage.url;
+    return safeImageUrl(raw);
   }
 
   // If no main product image, try to get the default variant image
@@ -115,7 +124,9 @@ export const getProductImage = (
       defaultVariant.images.length > 0
     ) {
       const variantImage = defaultVariant.images[0];
-      return typeof variantImage === 'string' ? variantImage : variantImage.url;
+      const raw =
+        typeof variantImage === 'string' ? variantImage : variantImage.url;
+      return safeImageUrl(raw);
     }
 
     // If no default variant, try the first variant with images
@@ -124,7 +135,9 @@ export const getProductImage = (
     );
     if (variantWithImages) {
       const variantImage = variantWithImages.images[0];
-      return typeof variantImage === 'string' ? variantImage : variantImage.url;
+      const raw =
+        typeof variantImage === 'string' ? variantImage : variantImage.url;
+      return safeImageUrl(raw);
     }
   }
 

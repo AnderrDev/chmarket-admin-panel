@@ -1,5 +1,5 @@
 // src/components/product-form/MultipleVariantsForm.tsx
-import { useState } from 'react';
+import type { ChangeEvent, FocusEvent } from 'react';
 import type { VariantFormData } from '@/types/productForm';
 import { formatPriceInput, parsePriceInput } from '@/utils/format';
 import DragAndDropImageGallery from './DragAndDropImageGallery';
@@ -18,7 +18,7 @@ interface MultipleVariantsFormProps {
   onSetVariantAsDefault: (index: number) => void;
   onVariantFiles: (
     index: number,
-    e: React.ChangeEvent<HTMLInputElement>
+    e: ChangeEvent<HTMLInputElement>
   ) => void;
   onVariantAlt: (
     variantIndex: number,
@@ -48,7 +48,6 @@ export default function MultipleVariantsForm({
   onUpdateVariant,
   onSetVariantAsDefault,
   onVariantFiles,
-  onVariantAlt,
   onRemoveNewVariantImage,
   onRemoveExistingVariantImage,
   onReorderVariantImages,
@@ -57,7 +56,7 @@ export default function MultipleVariantsForm({
 }: MultipleVariantsFormProps) {
   const handleVariantChange = (
     index: number,
-    e: React.ChangeEvent<HTMLInputElement>
+    e: ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
@@ -67,7 +66,7 @@ export default function MultipleVariantsForm({
   const handlePriceChange = (
     index: number,
     field: 'price_cents' | 'compare_at_price_cents',
-    e: React.ChangeEvent<HTMLInputElement>
+    e: ChangeEvent<HTMLInputElement>
   ) => {
     const formattedValue = e.target.value;
     const centsValue = parsePriceInput(formattedValue);
@@ -75,18 +74,17 @@ export default function MultipleVariantsForm({
   };
 
   const handlePriceFocus = (
-    index: number,
-    field: 'price_cents' | 'compare_at_price_cents',
-    e: React.FocusEvent<HTMLInputElement>
+    _index: number,
+    _field: 'price_cents' | 'compare_at_price_cents',
+    _e: FocusEvent<HTMLInputElement>
   ) => {
-    // No hacer nada en el focus, solo formatear en el blur
-    // Esto evita que se borre el valor al seleccionar el input
+    // No-op: value is formatted on blur, not on focus
   };
 
   const handlePriceBlur = (
     index: number,
     field: 'price_cents' | 'compare_at_price_cents',
-    e: React.FocusEvent<HTMLInputElement>
+    e: FocusEvent<HTMLInputElement>
   ) => {
     const formattedValue = e.target.value;
     const centsValue = parsePriceInput(formattedValue);
@@ -277,16 +275,16 @@ export default function MultipleVariantsForm({
                   images={variant.existingImages.map((img, i) => ({
                     id: `existing-${i}`,
                     url: img.url,
-                    alt: img.alt || '',
-                    path: img.path,
+                    ...(img.alt ? { alt: img.alt } : {}),
+                    ...(img.path ? { path: img.path } : {}),
                   }))}
                   onReorder={reorderedImages => {
                     if (onReorderExistingVariantImages) {
                       const reorderedExistingImages = reorderedImages.map(
                         img => ({
                           url: img.url,
-                          alt: img.alt,
-                          path: img.path,
+                          ...(img.alt !== undefined ? { alt: img.alt } : {}),
+                          ...(img.path !== undefined ? { path: img.path } : {}),
                         })
                       );
                       onReorderExistingVariantImages(

@@ -1,11 +1,10 @@
 // src/domain/usecases/product/ListProducts.ts
-import type { Product } from '@/data/entities/product';
-import type { ProductRepository } from '../../repositories/product/ProductRepository';
+import type { ProductRepository, ProductListResult } from '../../repositories/product/ProductRepository';
 
 export class ListProductsUseCase {
   constructor(private readonly productRepository: ProductRepository) {}
 
-  async execute(limit: number = 24): Promise<Product[]> {
-    return this.productRepository.listProducts(limit);
+  async execute(page = 1, pageSize = 24): Promise<ProductListResult> {
+    return this.productRepository.listProducts(page, pageSize);
   }
 }

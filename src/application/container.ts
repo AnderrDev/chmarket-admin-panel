@@ -16,6 +16,7 @@ import { CreateProductUseCase } from '@/domain/usecases/product/CreateProduct';
 import { UpdateProductUseCase } from '@/domain/usecases/product/UpdateProduct';
 import { DeleteProductUseCase } from '@/domain/usecases/product/DeleteProduct';
 import { GetProductVariantsUseCase } from '@/domain/usecases/product/GetProductVariants';
+import { GetLowStockProductsUseCase } from '@/domain/usecases/product/GetLowStockProducts';
 import { CreateVariantUseCase } from '@/domain/usecases/product/CreateVariant';
 import { UpdateVariantUseCase } from '@/domain/usecases/product/UpdateVariant';
 import { DeleteVariantUseCase } from '@/domain/usecases/product/DeleteVariant';
@@ -40,7 +41,6 @@ import { GetOrderItemsUseCase } from '@/domain/usecases/order/GetOrderItems';
 import { UpdateOrderStatusUseCase } from '@/domain/usecases/order/UpdateOrderStatus';
 import { GetOrdersByStatusUseCase } from '@/domain/usecases/order/GetOrdersByStatus';
 import { GetOrdersStatsUseCase } from '@/domain/usecases/order/GetOrdersStats';
-import { ProductViewModel } from '@/presentation/viewmodels/ProductViewModel';
 import { AuthViewModel } from '@/presentation/viewmodels/AuthViewModel';
 import { CategoryViewModel } from '@/presentation/viewmodels/CategoryViewModel';
 import { notificationService } from '@/application/services/NotificationService';
@@ -70,6 +70,9 @@ export const createProductUseCase = new CreateProductUseCase(productRepository);
 export const updateProductUseCase = new UpdateProductUseCase(productRepository);
 export const deleteProductUseCase = new DeleteProductUseCase(productRepository);
 export const getProductVariantsUseCase = new GetProductVariantsUseCase(
+  productRepository
+);
+export const getLowStockProductsUseCase = new GetLowStockProductsUseCase(
   productRepository
 );
 export const createVariantUseCase = new CreateVariantUseCase(productRepository);
@@ -127,18 +130,6 @@ export const getOrdersByStatusUseCase = new GetOrdersByStatusUseCase(
 export const getOrdersStatsUseCase = new GetOrdersStatsUseCase(orderRepository);
 
 // Presentation Layer
-export const productViewModel = new ProductViewModel(
-  listProductsUseCase,
-  createProductUseCase,
-  updateProductUseCase,
-  deleteProductUseCase,
-  getProductVariantsUseCase,
-  createVariantUseCase,
-  updateVariantUseCase,
-  deleteVariantUseCase,
-  notificationService
-);
-
 export const authViewModel = new AuthViewModel(
   loginUseCase,
   logoutUseCase,

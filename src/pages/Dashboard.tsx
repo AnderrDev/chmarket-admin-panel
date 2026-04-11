@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package,
@@ -9,215 +9,121 @@ import {
   Tag,
   ExternalLink,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useProducts } from '@/hooks/useProducts.ts';
 import { useOrders } from '@/hooks/useOrders.ts';
 import { useDiscounts } from '@/hooks/useDiscounts.ts';
-import { formatCurrency, getProductImage } from '@/utils/format.ts';
-import { DashboardStats } from '@/types/index.ts';
+import { getLowStockProductsUseCase } from '@/application/container';
+import { formatCurrency } from '@/utils/format.ts';
+import { getProductImage } from '@/utils/format.ts';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const {
-    products,
-    getProductVariants,
-    loading: productsLoading,
-  } = useProducts();
-  const { getOrdersStats, orders, loading: ordersLoading } = useOrders();
+  const { products, totalProducts, loading: productsLoading } = useProducts();
+  const { orders, totalOrders, loading: ordersLoading } = useOrders();
   const { discounts, loading: discountsLoading } = useDiscounts();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    pendingOrders: 0,
-    lowStockProducts: 0,
-    activeDiscounts: 0,
+
+  // Single query replaces the N+1 variant loop — fetches all low-stock in one DB call
+  const { data: lowStockRows = [], isLoading: lowStockLoading } = useQuery({
+    queryKey: ['admin', 'low-stock'],
+    queryFn: () => getLowStockProductsUseCase.execute(),
+    staleTime: 60_000,
   });
-  const [loading, setLoading] = useState(true);
-  const [lowStockProductsList, setLowStockProductsList] = useState<
-    Array<{
-      product: any;
-      variants: Array<{ variant: any; stock: number; threshold: number }>;
-    }>
-  >([]);
-  const [productVariants, setProductVariants] = useState<Record<string, any[]>>(
-    {}
+
+  // Derived stats — no useEffect/setState needed, recomputed only when data changes
+  const totalRevenue = useMemo(
+    () =>
+      orders
+        .filter(o => o.status === 'PAID' || o.status === 'FULFILLED')
+        .reduce((sum, o) => sum + o.total_cents, 0),
+    [orders]
+  );
+  const pendingOrders = useMemo(
+    () => orders.filter(o => o.status === 'CREATED').length,
+    [orders]
+  );
+  const activeDiscounts = useMemo(
+    () => discounts.filter(d => d.is_active).length,
+    [discounts]
   );
 
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        setLoading(true);
-
-        // Calcular estadísticas de productos
-        // Verificar productos con stock bajo
-        let lowStockProducts = 0;
-        const lowStockList: Array<{
-          product: any;
-          variants: Array<{ variant: any; stock: number; threshold: number }>;
-        }> = [];
-
-        for (const product of products) {
-          // Solo procesar productos activos
-          if (!product.is_active) continue;
-
-          try {
-            const variants = await getProductVariants(product.id);
-            const lowStockVariants = variants.filter(
-              variant => variant.in_stock <= variant.low_stock_threshold
-            );
-
-            if (lowStockVariants.length > 0) {
-              lowStockProducts++;
-              lowStockList.push({
-                product,
-                variants: lowStockVariants.map(variant => ({
-                  variant,
-                  stock: variant.in_stock,
-                  threshold: variant.low_stock_threshold,
-                })),
-              });
-            }
-          } catch (error) {
-            console.error(
-              `Error checking variants for product ${product.id}:`,
-              error
-            );
-          }
-        }
-
-        setLowStockProductsList(lowStockList);
-
-        // Obtener estadísticas de órdenes
-        const orderStats = await getOrdersStats();
-
-        // Calcular ingresos solo de órdenes pagadas (PAID y FULFILLED)
-        const paidOrders = orders.filter(
-          order => order.status === 'PAID' || order.status === 'FULFILLED'
-        );
-        const totalRevenueFromPaidOrders = paidOrders.reduce(
-          (sum, order) => sum + order.total_cents,
-          0
-        );
-
-        // Calcular cupones activos
-        const activeDiscounts = discounts.filter(d => d.is_active).length;
-
-        setStats({
-          totalProducts: products.length,
-          totalOrders: orderStats.totalOrders,
-          totalRevenue: totalRevenueFromPaidOrders,
-          pendingOrders: orderStats.pendingOrders,
-          lowStockProducts,
-          activeDiscounts,
+  // Group low-stock rows into product-level groups for the UI card
+  const lowStockGroups = useMemo(() => {
+    const map = new Map<string, { product: any; variants: any[] }>();
+    for (const row of lowStockRows) {
+      if (!map.has(row.product_id)) {
+        map.set(row.product_id, {
+          product: {
+            id: row.product_id,
+            name: row.product_name,
+            slug: row.product_slug,
+            images: row.product_images,
+            category_name: row.category_name,
+          },
+          variants: [],
         });
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    // Ejecutar loadStats cuando los hooks hayan terminado de cargar
-    // No esperar órdenes ya que pueden estar vacías
-    if (!productsLoading && !ordersLoading && !discountsLoading) {
-      loadStats();
+      map.get(row.product_id)!.variants.push({
+        label: row.variant_label,
+        flavor: row.variant_flavor,
+        size: row.variant_size,
+        stock: row.in_stock,
+        threshold: row.low_stock_threshold,
+      });
     }
-  }, [products, orders, discounts]);
-
-  // Load variants for each product
-  useEffect(() => {
-    const loadVariants = async () => {
-      if (products.length > 0) {
-        const variantsMap: Record<string, any[]> = {};
-
-        for (const product of products) {
-          try {
-            const variants = await getProductVariants(product.id);
-            variantsMap[product.id] = variants;
-          } catch (error) {
-            console.error(
-              `Error loading variants for product ${product.id}:`,
-              error
-            );
-            variantsMap[product.id] = [];
-          }
-        }
-
-        setProductVariants(variantsMap);
-      }
-    };
-
-    loadVariants();
-  }, [products, getProductVariants]);
+    return Array.from(map.values());
+  }, [lowStockRows]);
 
   const statCards = [
     {
       name: 'Total Productos',
-      value: stats.totalProducts,
+      value: totalProducts,
+      loading: productsLoading,
       icon: Package,
       color: 'bg-blue-500',
       textColor: 'text-blue-600',
     },
     {
       name: 'Total Órdenes',
-      value: stats.totalOrders,
+      value: totalOrders,
+      loading: ordersLoading,
       icon: ShoppingCart,
       color: 'bg-green-500',
       textColor: 'text-green-600',
     },
     {
       name: 'Ingresos Totales',
-      value: formatCurrency(stats.totalRevenue),
+      value: formatCurrency(totalRevenue),
+      loading: ordersLoading,
       icon: DollarSign,
       color: 'bg-yellow-500',
       textColor: 'text-yellow-600',
     },
     {
       name: 'Órdenes Pendientes',
-      value: stats.pendingOrders,
+      value: pendingOrders,
+      loading: ordersLoading,
       icon: TrendingUp,
       color: 'bg-orange-500',
       textColor: 'text-orange-600',
     },
     {
       name: 'Productos Bajo Stock',
-      value: stats.lowStockProducts,
+      value: lowStockGroups.length,
+      loading: lowStockLoading,
       icon: AlertTriangle,
       color: 'bg-red-500',
       textColor: 'text-red-600',
     },
     {
       name: 'Cupones Activos',
-      value: stats.activeDiscounts,
+      value: activeDiscounts,
+      loading: discountsLoading,
       icon: Tag,
       color: 'bg-purple-500',
       textColor: 'text-purple-600',
     },
   ];
-
-  if (loading || productsLoading || ordersLoading || discountsLoading) {
-    return (
-      <div className="animate-pulse">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-6 bg-gray-200 rounded w-1/2 mt-2"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -244,14 +150,21 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      {stat.name}
-                    </dt>
-                    <dd className={`text-lg font-medium ${stat.textColor}`}>
-                      {stat.value}
-                    </dd>
-                  </dl>
+                  {stat.loading ? (
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-6 bg-gray-200 rounded w-1/2 mt-2"></div>
+                    </div>
+                  ) : (
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        {stat.name}
+                      </dt>
+                      <dd className={`text-lg font-medium ${stat.textColor}`}>
+                        {stat.value}
+                      </dd>
+                    </dl>
+                  )}
                 </div>
               </div>
             </div>
@@ -268,11 +181,7 @@ export default function Dashboard() {
             </h3>
             <div className="space-y-3">
               {products.slice(0, 5).map(product => {
-                const imageUrl =
-                  typeof product.images?.[0] === 'string'
-                    ? product.images[0]
-                    : product.images?.[0]?.url;
-
+                const imageUrl = getProductImage(product);
                 return (
                   <div
                     key={product.id}
@@ -356,7 +265,7 @@ export default function Dashboard() {
       </div>
 
       {/* Productos con Bajo Stock */}
-      {lowStockProductsList.length > 0 && (
+      {lowStockGroups.length > 0 && (
         <div className="mt-8 bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <div className="flex items-center mb-4">
@@ -366,10 +275,8 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="space-y-4">
-              {lowStockProductsList.map(({ product, variants }) => {
-                const productVariantsData = productVariants[product.id] || [];
-                const imageUrl = getProductImage(product, productVariantsData);
-
+              {lowStockGroups.map(({ product, variants }) => {
+                const imageUrl = getProductImage(product);
                 return (
                   <div
                     key={product.id}
@@ -414,33 +321,20 @@ export default function Dashboard() {
                             Variantes con bajo stock:
                           </p>
                           <div className="space-y-1">
-                            {variants.map(
-                              ({ variant, stock, threshold }, index) => (
-                                <div
-                                  key={index}
-                                  className="text-sm text-gray-700"
-                                >
-                                  <span className="font-medium">
-                                    {variant.label}
-                                  </span>
-                                  {variant.flavor && (
-                                    <span className="text-gray-500">
-                                      {' '}
-                                      - {variant.flavor}
-                                    </span>
-                                  )}
-                                  {variant.size && (
-                                    <span className="text-gray-500">
-                                      {' '}
-                                      - {variant.size}
-                                    </span>
-                                  )}
-                                  <span className="ml-2 text-red-600 font-medium">
-                                    Stock: {stock} (Umbral: {threshold})
-                                  </span>
-                                </div>
-                              )
-                            )}
+                            {variants.map((v, i) => (
+                              <div key={i} className="text-sm text-gray-700">
+                                <span className="font-medium">{v.label}</span>
+                                {v.flavor && (
+                                  <span className="text-gray-500"> - {v.flavor}</span>
+                                )}
+                                {v.size && (
+                                  <span className="text-gray-500"> - {v.size}</span>
+                                )}
+                                <span className="ml-2 text-red-600 font-medium">
+                                  Stock: {v.stock} (Umbral: {v.threshold})
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>

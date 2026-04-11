@@ -1,8 +1,33 @@
 // src/data/datasources/ProductDataSource.ts
+import { supabase } from '@/lib/supabase';
 import type { Product, ProductVariant } from '@/data/entities/product';
 
+export interface ProductListResult {
+  data: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface LowStockRow {
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  product_images: any;
+  category_id: string | null;
+  category_name: string | null;
+  variant_id: string;
+  variant_label: string;
+  variant_flavor: string | null;
+  variant_size: string | null;
+  variant_sku: string;
+  in_stock: number;
+  low_stock_threshold: number;
+}
+
 export interface ProductDataSource {
-  listProducts(limit?: number): Promise<Product[]>;
+  listProducts(page?: number, pageSize?: number): Promise<ProductListResult>;
+  getLowStockProducts(): Promise<LowStockRow[]>;
   getProduct(id: string): Promise<Product | null>;
   createProduct(
     productData: any,
@@ -27,8 +52,12 @@ export class SupabaseProductDataSource implements ProductDataSource {
     };
   }
 
-  async listProducts(limit: number = 20): Promise<Product[]> {
-    const response = await fetch(`${this.baseUrl}/products/list`, {
+  async listProducts(page = 1, pageSize = 24): Promise<ProductListResult> {
+    const url = new URL(`${this.baseUrl}/products/list`);
+    url.searchParams.set('page', String(page));
+    url.searchParams.set('pageSize', String(pageSize));
+
+    const response = await fetch(url.toString(), {
       headers: { ...this.authHeaders },
     });
     const json = await response.json();
@@ -37,14 +66,15 @@ export class SupabaseProductDataSource implements ProductDataSource {
       throw new Error(json?.error || 'Error al cargar productos');
     }
 
-    // Mapeamos la categoría anidada
-    return (json.data || []).map((p: any) => ({
+    const data = (json.data || []).map((p: any) => ({
       ...p,
       category_id: p.category?.id || p.category_id || null,
       category_name: p.category?.name || p.category_name || null,
-      store: p.store || '', // Include store field without forcing default
-      category: undefined, // evitamos duplicados en el objeto
+      store: p.store || '',
+      category: undefined,
     }));
+
+    return { data, total: json.total ?? 0, page: json.page ?? page, pageSize: json.pageSize ?? pageSize };
   }
 
   async getProduct(id: string): Promise<Product | null> {
@@ -170,5 +200,11 @@ export class SupabaseProductDataSource implements ProductDataSource {
     if (!response.ok) {
       throw new Error(json?.error || 'Error al eliminar variante');
     }
+  }
+
+  async getLowStockProducts(): Promise<LowStockRow[]> {
+    const { data, error } = await supabase.rpc('get_low_stock_products');
+    if (error) throw new Error(error.message);
+    return data ?? [];
   }
 }

@@ -1,7 +1,7 @@
 // src/pages/Products.tsx
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Package, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import {
@@ -36,6 +36,10 @@ export default function Products() {
   const {
     products,
     loading,
+    page,
+    setPage,
+    totalProducts,
+    totalPages,
     deleteProduct,
     fetchProducts,
     updateProduct,
@@ -361,6 +365,34 @@ export default function Products() {
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between bg-white px-4 py-3 shadow rounded-lg">
+          <div className="text-sm text-gray-500">
+            Mostrando {(page - 1) * 24 + 1}–{Math.min(page * 24, totalProducts)} de {totalProducts} productos
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="inline-flex items-center px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="inline-flex items-center px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 

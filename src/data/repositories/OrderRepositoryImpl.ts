@@ -1,13 +1,13 @@
 // src/data/repositories/OrderRepositoryImpl.ts
 import type { Order, OrderItem } from '@/data/entities/order';
-import type { OrderRepository } from '@/domain/repositories/order/OrderRepository';
+import type { OrderRepository, OrderListResult } from '@/domain/repositories/order/OrderRepository';
 import type { OrderDataSource } from '@/data/datasources/OrderDataSource';
 
 export class OrderRepositoryImpl implements OrderRepository {
   constructor(private readonly dataSource: OrderDataSource) {}
 
-  async listOrders(): Promise<Order[]> {
-    return this.dataSource.listOrders();
+  async listOrders(page?: number, pageSize?: number): Promise<OrderListResult> {
+    return this.dataSource.listOrders(page, pageSize);
   }
 
   async getOrder(id: string): Promise<Order | null> {

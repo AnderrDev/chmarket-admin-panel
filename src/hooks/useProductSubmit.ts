@@ -21,7 +21,6 @@ export function useProductSubmit() {
   const {
     createProduct,
     updateProduct,
-    getProductVariants,
     createVariant,
     updateVariant,
     deleteVariant,
@@ -268,9 +267,9 @@ export function useProductSubmit() {
                 is_default: change.variant.is_default,
                 images: [...remainingExistingImages, ...variantImages],
               };
-              await updateVariant(change.variantId!, variantPayload);
+              await updateVariant(change.variant.id!, variantPayload);
             } else if (change.action === 'delete') {
-              await deleteVariant(change.variantId!);
+              await deleteVariant(change.variant.id!);
             }
           }
           hasAnyChanges = true;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Tag, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryForm } from '@/components/CategoryForm';
 import { formatDate } from '@/utils/format';

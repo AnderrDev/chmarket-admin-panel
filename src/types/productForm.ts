@@ -24,6 +24,7 @@ export interface NutritionFactsData {
 }
 
 export interface VariantFormData {
+  id?: string;
   sku: string;
   label: string;
   size: string;
