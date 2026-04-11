@@ -1,16 +1,16 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
   Tag,
   FolderOpen,
   Menu,
   X,
-  LogOut
+  LogOut,
+  ChevronRight,
 } from 'lucide-react'
-import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 interface LayoutProps {
@@ -25,125 +25,135 @@ const navigation = [
   { name: 'Cupones', href: '/discounts', icon: Tag },
 ]
 
-export default function Layout({ children }: LayoutProps) {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation()
+  const { signOut, user } = useAuth()
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex h-16 items-center px-6 border-b border-gray-700/50">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg">
+            <span className="text-white font-black text-sm tracking-tight">CH</span>
+          </div>
+          <div>
+            <span className="text-white font-bold text-base tracking-tight">CH+</span>
+            <span className="text-gray-400 text-xs ml-1">Admin</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <p className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Menú
+        </p>
+        {navigation.map(item => {
+          const isActive =
+            item.href === '/'
+              ? location.pathname === '/'
+              : location.pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              onClick={onNavigate}
+              className={`group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 ${
+                isActive
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/30'
+                  : 'text-gray-400 hover:bg-gray-700/60 hover:text-gray-100'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <item.icon
+                  className={`h-4.5 w-4.5 flex-shrink-0 ${
+                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'
+                  }`}
+                  size={18}
+                />
+                {item.name}
+              </div>
+              {isActive && <ChevronRight size={14} className="text-blue-200" />}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* User / Logout */}
+      <div className="px-3 py-4 border-t border-gray-700/50">
+        {user?.email && (
+          <div className="px-3 py-2 mb-2">
+            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          </div>
+        )}
+        <button
+          onClick={signOut}
+          className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-all duration-150"
+        >
+          <LogOut size={18} className="text-gray-500 group-hover:text-red-400 transition-colors" />
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { signOut } = useAuth()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar móvil */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
-          <div className="flex h-16 items-center justify-between px-4">
-            <h1 className="text-xl font-bold text-gray-900">CH+ Admin</h1>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X size={24} />
-            </button>
-          </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 ${
-                      isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
-                  {item.name}
-                </Link>
-              )
-            })}
-            
-            {/* Botón de logout */}
-            <div className="pt-4 border-t border-gray-200">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          aria-modal="true"
+        >
+          <div
+            className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-900 shadow-xl">
+            <div className="absolute top-4 right-4">
               <button
-                onClick={signOut}
-                className="group flex items-center w-full px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors"
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                Cerrar Sesión
+                <X size={18} />
               </button>
             </div>
-          </nav>
-        </div>
-      </div>
-
-      {/* Sidebar desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
-          <div className="flex h-16 items-center px-4">
-            <h1 className="text-xl font-bold text-gray-900">CH+ Admin</h1>
+            <SidebarContent onNavigate={() => setSidebarOpen(false)} />
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 ${
-                      isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
-                  {item.name}
-                </Link>
-              )
-            })}
-            
-            {/* Botón de logout */}
-            <div className="pt-4 border-t border-gray-200">
-              <button
-                onClick={signOut}
-                className="group flex items-center w-full px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors"
-              >
-                <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                Cerrar Sesión
-              </button>
-            </div>
-          </nav>
         </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col bg-gray-900 shadow-xl">
+        <SidebarContent />
       </div>
 
-      {/* Contenido principal */}
-      <div className="lg:pl-64">
-        {/* Header móvil */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm lg:hidden">
+      {/* Main content */}
+      <div className="lg:pl-60">
+        {/* Mobile top bar */}
+        <div className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-gray-200 bg-white/90 backdrop-blur px-4 shadow-sm lg:hidden">
           <button
             type="button"
-            className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu size={24} />
+            <Menu size={20} />
           </button>
-          <div className="flex-1 text-sm font-semibold leading-6 text-gray-900">
-            CH+ Admin Panel
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-blue-700">
+              <span className="text-white font-black text-xs">CH</span>
+            </div>
+            <span className="text-sm font-semibold text-gray-800">Admin Panel</span>
           </div>
         </div>
 
-        {/* Contenido de la página */}
-        <main className="py-6">
+        {/* Page content */}
+        <main className="py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children}
           </div>

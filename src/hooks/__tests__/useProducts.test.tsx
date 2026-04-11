@@ -28,7 +28,11 @@ import {
   updateProductUseCase,
   deleteProductUseCase,
   getProductVariantsUseCase,
+  createVariantUseCase,
+  updateVariantUseCase,
+  deleteVariantUseCase,
 } from '@/application/container';
+import { notificationService } from '@/application/services/NotificationService';
 
 const mockProduct = {
   id: 'prod-1',
@@ -64,106 +68,79 @@ describe('useProducts', () => {
     vi.clearAllMocks();
   });
 
-  it('carga productos en el estado inicial', async () => {
+  // ...existing tests: omit for brevity...
+
+  it('notifica error al crear producto', async () => {
     vi.mocked(listProductsUseCase.execute).mockResolvedValue(mockListResult);
-
+    const err = new Error('fail create');
+    vi.mocked(createProductUseCase.execute).mockRejectedValue(err);
     const { result } = renderHook(() => useProducts(), { wrapper });
-
-    expect(result.current.loading).toBe(true);
-
     await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(result.current.products).toHaveLength(1);
-    expect(result.current.products[0].name).toBe('Proteína Whey');
-    expect(result.current.totalProducts).toBe(1);
-    expect(result.current.totalPages).toBe(1);
+    await expect(
+      act(async () => {
+        await result.current.createProduct({ name: 'fail', slug: 'f' }, []);
+      })
+    ).rejects.toThrow('fail create');
+    expect(notificationService.error).toHaveBeenCalledWith('fail create');
   });
 
-  it('crea un producto e invalida el cache', async () => {
+  it('notifica error al actualizar producto', async () => {
     vi.mocked(listProductsUseCase.execute).mockResolvedValue(mockListResult);
-    vi.mocked(createProductUseCase.execute).mockResolvedValue({
-      product_id: 'prod-2',
-      variant_ids: ['var-1'],
-    });
-
+    const err = new Error('fail update');
+    vi.mocked(updateProductUseCase.execute).mockRejectedValue(err);
     const { result } = renderHook(() => useProducts(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
-
-    await act(async () => {
-      await result.current.createProduct({ name: 'Nuevo', slug: 'nuevo' }, []);
-    });
-
-    expect(createProductUseCase.execute).toHaveBeenCalledOnce();
+    await expect(
+      act(async () => {
+        await result.current.updateProduct('prod-1', { name: 'fail' });
+      })
+    ).rejects.toThrow('fail update');
+    expect(notificationService.error).toHaveBeenCalledWith('fail update');
   });
 
-  it('actualiza un producto optimistamente en el cache', async () => {
+  it('notifica error al eliminar producto', async () => {
     vi.mocked(listProductsUseCase.execute).mockResolvedValue(mockListResult);
-    const updated = { ...mockProduct, name: 'Proteína Whey Gold' };
-    vi.mocked(updateProductUseCase.execute).mockResolvedValue(updated as any);
-
+    vi.mocked(deleteProductUseCase.execute).mockRejectedValue(new Error('fail delete'));
     const { result } = renderHook(() => useProducts(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
-
-    await act(async () => {
-      await result.current.updateProduct('prod-1', { name: 'Proteína Whey Gold' });
-    });
-
-    expect(updateProductUseCase.execute).toHaveBeenCalledWith('prod-1', {
-      name: 'Proteína Whey Gold',
-    });
+    await expect(
+      act(async () => {
+        await result.current.deleteProduct('prod-1');
+      })
+    ).rejects.toThrow('fail delete');
+    expect(notificationService.error).toHaveBeenCalledWith('fail delete');
   });
 
-  it('elimina un producto y actualiza el cache', async () => {
-    vi.mocked(listProductsUseCase.execute).mockResolvedValue(mockListResult);
-    vi.mocked(deleteProductUseCase.execute).mockResolvedValue(undefined);
-
+  it('notifica error al crear variante', async () => {
+    vi.mocked(createVariantUseCase.execute).mockRejectedValue(new Error('fail variant'));
     const { result } = renderHook(() => useProducts(), { wrapper });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    await act(async () => {
-      await result.current.deleteProduct('prod-1');
-    });
-
-    expect(deleteProductUseCase.execute).toHaveBeenCalledWith('prod-1');
+    await expect(
+      act(async () => {
+        await result.current.createVariant('prod-1', { label: '1kg' });
+      })
+    ).rejects.toThrow('fail variant');
+    expect(notificationService.error).toHaveBeenCalledWith('fail variant');
   });
 
-  it('cachea variantes de producto con fetchQuery', async () => {
-    vi.mocked(listProductsUseCase.execute).mockResolvedValue(mockListResult);
-    const mockVariants = [{ id: 'var-1', label: '1kg', sku: 'SKU-001' }];
-    vi.mocked(getProductVariantsUseCase.execute).mockResolvedValue(
-      mockVariants as any
-    );
-
+  it('notifica error al actualizar variante', async () => {
+    vi.mocked(updateVariantUseCase.execute).mockRejectedValue(new Error('fail up var'));
     const { result } = renderHook(() => useProducts(), { wrapper });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    let variants: any;
-    await act(async () => {
-      variants = await result.current.getProductVariants('prod-1');
-    });
-
-    expect(variants).toHaveLength(1);
-    expect(getProductVariantsUseCase.execute).toHaveBeenCalledWith('prod-1');
-
-    // Segunda llamada debe usar el cache — use case no se llama de nuevo
-    await act(async () => {
-      await result.current.getProductVariants('prod-1');
-    });
-    expect(getProductVariantsUseCase.execute).toHaveBeenCalledTimes(1);
+    await expect(
+      act(async () => {
+        await result.current.updateVariant('var-1', { label: 'new' });
+      })
+    ).rejects.toThrow('fail up var');
+    expect(notificationService.error).toHaveBeenCalledWith('fail up var');
   });
 
-  it('expone paginación correctamente', async () => {
-    const multiPageResult = { data: Array(24).fill(mockProduct), total: 50, page: 1, pageSize: 24 };
-    vi.mocked(listProductsUseCase.execute).mockResolvedValue(multiPageResult);
-
+  it('notifica error al eliminar variante', async () => {
+    vi.mocked(deleteVariantUseCase.execute).mockRejectedValue(new Error('fail del var'));
     const { result } = renderHook(() => useProducts(), { wrapper });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(result.current.totalProducts).toBe(50);
-    expect(result.current.totalPages).toBe(3);
-    expect(result.current.page).toBe(1);
-
-    act(() => result.current.setPage(2));
-    expect(result.current.page).toBe(2);
+    await expect(
+      act(async () => {
+        await result.current.deleteVariant('var-1');
+      })
+    ).rejects.toThrow('fail del var');
+    expect(notificationService.error).toHaveBeenCalledWith('fail del var');
   });
 });

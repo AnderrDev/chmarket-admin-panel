@@ -57,7 +57,7 @@ export default function BasicProductInfo({
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium mb-1">Nombre *</label>

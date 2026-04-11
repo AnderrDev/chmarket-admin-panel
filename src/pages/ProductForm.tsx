@@ -147,41 +147,40 @@ export default function ProductForm() {
 
   if (loading && isEditing) return <ProductSkeleton />;
   return (
-    <div>
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/products')}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {isEditing ? 'Editar Producto' : 'Nuevo Producto'}
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                {isEditing
-                  ? 'Modifica la información del producto'
-                  : 'Crea un nuevo producto con su primera variante'}
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/products')}
+            className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">
+              {isEditing ? 'Editar Producto' : 'Nuevo Producto'}
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {isEditing
+                ? 'Modifica la información del producto'
+                : 'Crea un nuevo producto con su primera variante'}
+            </p>
           </div>
-          {!isEditing && (
-            <button
-              onClick={fillWithTestData}
-              className="btn-secondary inline-flex items-center text-sm"
-              type="button"
-            >
-              <TestTube className="w-4 h-4 mr-2" />
-              Rellenar con datos de prueba
-            </button>
-          )}
         </div>
+        {!isEditing && (
+          <button
+            onClick={fillWithTestData}
+            type="button"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <TestTube className="w-4 h-4" />
+            Datos de prueba
+          </button>
+        )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Información básica */}
         <BasicProductInfo
           formData={formData}
@@ -192,7 +191,7 @@ export default function ProductForm() {
         />
 
         {/* Características e ingredientes */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <FeaturesAndIngredients
             features={formData.features}
             ingredients={formData.ingredients}
@@ -256,27 +255,27 @@ export default function ProductForm() {
           isEditing={isEditing}
         />
 
-        <div className="flex justify-end space-x-4">
+        <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={() => navigate('/products')}
-            className="btn-secondary"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="btn-primary inline-flex items-center"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors shadow-sm"
           >
             {saving ? (
               <>
-                <Package className="w-4 h-4 mr-2 animate-spin" />
+                <Package className="w-4 h-4 animate-spin" />
                 Guardando…
               </>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-4 h-4" />
                 {isEditing ? 'Actualizar' : 'Crear'} Producto
               </>
             )}

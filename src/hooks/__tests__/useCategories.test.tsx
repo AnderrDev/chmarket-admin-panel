@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useCategories } from '../useCategories';
+import type { Category } from '@/data/entities/category';
 
-const mockCategories = [
+const mockCategories: Category[] = [
   {
     id: 'cat-1',
     name: 'Proteínas',
@@ -29,7 +30,7 @@ vi.mock('@/application/container', () => ({
 
 describe('useCategories', () => {
   // Mutable state mirror shared between mock implementations
-  let _categories = [...mockCategories];
+  let _categories: Category[] = [...mockCategories];
   let _error: string | null = null;
 
   beforeEach(() => {
