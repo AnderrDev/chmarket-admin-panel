@@ -37,6 +37,7 @@ export class SupabaseAuthDataSource implements AuthDataSource {
         email: data.user.email || '',
         created_at: data.user.created_at,
         updated_at: data.user.updated_at || data.user.created_at,
+        is_admin: data.user.app_metadata?.role === 'admin',
       },
     };
   }
@@ -70,6 +71,7 @@ export class SupabaseAuthDataSource implements AuthDataSource {
         created_at: data.session.user.created_at,
         updated_at:
           data.session.user.updated_at || data.session.user.created_at,
+        is_admin: data.session.user.app_metadata?.role === 'admin',
       },
     };
   }
@@ -96,6 +98,7 @@ export class SupabaseAuthDataSource implements AuthDataSource {
         created_at: data.session.user.created_at,
         updated_at:
           data.session.user.updated_at || data.session.user.created_at,
+        is_admin: data.session.user.app_metadata?.role === 'admin',
       },
     };
   }
@@ -117,6 +120,7 @@ export class SupabaseAuthDataSource implements AuthDataSource {
               email: session.user.email || '',
               created_at: session.user.created_at,
               updated_at: session.user.updated_at || session.user.created_at,
+              is_admin: session.user.app_metadata?.role === 'admin',
             },
           }
         : null;

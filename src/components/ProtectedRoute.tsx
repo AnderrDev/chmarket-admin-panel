@@ -7,9 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
-
-  console.log('ProtectedRoute - loading:', loading, 'user:', user?.email);
+  const { user, loading, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -23,10 +21,31 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    console.log('ProtectedRoute - No user, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
-  console.log('ProtectedRoute - User authenticated, rendering children');
+  // La autorización real la hacen las Edge Functions; esto solo evita mostrar
+  // el panel a cuentas sin rol admin.
+  if (!user.is_admin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-sm">
+          <p className="text-lg font-semibold text-gray-900">
+            Acceso restringido
+          </p>
+          <p className="mt-2 text-gray-600">
+            Tu cuenta no tiene permisos de administrador.
+          </p>
+          <button
+            onClick={signOut}
+            className="mt-4 px-4 py-2 rounded-md bg-primary-600 text-white hover:bg-primary-700"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }

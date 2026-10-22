@@ -4,6 +4,8 @@ export interface User {
   email: string;
   created_at: string;
   updated_at: string;
+  // Viene de app_metadata.role (solo editable con service_role)
+  is_admin: boolean;
 }
 
 export interface Session {

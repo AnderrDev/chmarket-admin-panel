@@ -43,12 +43,19 @@ export interface ProductDataSource {
 
 export class SupabaseProductDataSource implements ProductDataSource {
   private readonly baseUrl: string;
-  private readonly authHeaders: { Authorization: string };
 
   constructor() {
     this.baseUrl = `${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/admin-products`;
-    this.authHeaders = {
-      Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_ANON_KEY}`,
+  }
+
+  // Las Edge Functions admin exigen el token del usuario (no la anon key)
+  private async getAuthHeaders() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return {
+      Authorization: `Bearer ${session?.access_token}`,
+      apikey: (import.meta as any).env.VITE_SUPABASE_ANON_KEY,
     };
   }
 
@@ -58,7 +65,7 @@ export class SupabaseProductDataSource implements ProductDataSource {
     url.searchParams.set('pageSize', String(pageSize));
 
     const response = await fetch(url.toString(), {
-      headers: { ...this.authHeaders },
+      headers: { ...(await this.getAuthHeaders()) },
     });
     const json = await response.json();
 
@@ -74,12 +81,17 @@ export class SupabaseProductDataSource implements ProductDataSource {
       category: undefined,
     }));
 
-    return { data, total: json.total ?? 0, page: json.page ?? page, pageSize: json.pageSize ?? pageSize };
+    return {
+      data,
+      total: json.total ?? 0,
+      page: json.page ?? page,
+      pageSize: json.pageSize ?? pageSize,
+    };
   }
 
   async getProduct(id: string): Promise<Product | null> {
     const response = await fetch(`${this.baseUrl}/products/${id}`, {
-      headers: { ...this.authHeaders },
+      headers: { ...(await this.getAuthHeaders()) },
     });
     const json = await response.json();
 
@@ -96,7 +108,10 @@ export class SupabaseProductDataSource implements ProductDataSource {
   ): Promise<{ product_id: string; variant_ids: string[] }> {
     const response = await fetch(`${this.baseUrl}/products`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...this.authHeaders },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await this.getAuthHeaders()),
+      },
       body: JSON.stringify({ product: productData, variants: variantsData }),
     });
     const json = await response.json();
@@ -111,7 +126,10 @@ export class SupabaseProductDataSource implements ProductDataSource {
   async updateProduct(id: string, productData: any): Promise<Product> {
     const response = await fetch(`${this.baseUrl}/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...this.authHeaders },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await this.getAuthHeaders()),
+      },
       body: JSON.stringify(productData),
     });
     const json = await response.json();
@@ -126,7 +144,10 @@ export class SupabaseProductDataSource implements ProductDataSource {
   async deleteProduct(id: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/products/${id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...this.authHeaders },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await this.getAuthHeaders()),
+      },
     });
     const json = await response.json();
 
@@ -139,7 +160,7 @@ export class SupabaseProductDataSource implements ProductDataSource {
     const response = await fetch(
       `${this.baseUrl}/products/${productId}/variants`,
       {
-        headers: { ...this.authHeaders },
+        headers: { ...(await this.getAuthHeaders()) },
       }
     );
     const json = await response.json();
@@ -159,7 +180,10 @@ export class SupabaseProductDataSource implements ProductDataSource {
       `${this.baseUrl}/products/${productId}/variants`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...this.authHeaders },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await this.getAuthHeaders()),
+        },
         body: JSON.stringify(variantData),
       }
     );
@@ -178,7 +202,10 @@ export class SupabaseProductDataSource implements ProductDataSource {
   ): Promise<ProductVariant> {
     const response = await fetch(`${this.baseUrl}/variants/${variantId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...this.authHeaders },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await this.getAuthHeaders()),
+      },
       body: JSON.stringify(variantData),
     });
     const json = await response.json();
@@ -193,7 +220,10 @@ export class SupabaseProductDataSource implements ProductDataSource {
   async deleteVariant(variantId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/variants/${variantId}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...this.authHeaders },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await this.getAuthHeaders()),
+      },
     });
     const json = await response.json();
 
